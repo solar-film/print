@@ -85,6 +85,42 @@ export default function App() {
   const [piecePaddingLeft, setPiecePaddingLeft] = useState(2);
   const [piecePaddingRight, setPiecePaddingRight] = useState(2);
 
+  // PWA Install Prompt State
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [showIosInstall, setShowIosInstall] = useState(false);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    
+    // Check iOS for manual install instruction
+    const isIos = () => {
+      const userAgent = window.navigator.userAgent.toLowerCase();
+      return /iphone|ipad|ipod/.test(userAgent);
+    };
+    const isInStandaloneMode = () => ('standalone' in window.navigator) && (window.navigator.standalone);
+    if (isIos() && !isInStandaloneMode()) {
+      setShowIosInstall(true);
+    }
+
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setDeferredPrompt(null);
+      }
+    } else if (showIosInstall) {
+      alert('สำหรับ iPhone/iPad:\nให้กดปุ่มแชร์ (Share) ที่ด้านล่างจอ\nแล้วเลือก "เพิ่มไปยังหน้าจอโฮม" (Add to Home Screen) ครับ');
+    }
+  };
+
   const EDIT_URL = 'https://docs.google.com/spreadsheets/d/1Xc4EY34N1u75-N899BUnb4Rrkv-1qq189R1Gqp94aIg/edit';
   const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTKDKVr3RKTRAp3KauC7AYBEcVq4coI9gss_O5iXyIr3mk8M1SA1KNkKy56J40J0xU-lyc3Tbs8HExa/pub?output=csv';
 
@@ -216,11 +252,22 @@ export default function App() {
       
       {/* Sidebar */}
       <aside className="w-full md:w-[350px] bg-white border-r border-slate-200 shadow-sm flex flex-col h-screen md:sticky top-0 z-10 print:hidden overflow-y-auto">
-        <div className="p-6 border-b border-slate-100 flex items-center space-x-3">
-          <div className="bg-blue-600 p-2 rounded-lg text-white">
-            <LayoutGrid size={24} />
+        <div className="p-6 border-b border-slate-100 flex flex-col space-y-4">
+          <div className="flex items-center space-x-3">
+            <div className="bg-blue-600 p-2 rounded-lg text-white">
+              <LayoutGrid size={24} />
+            </div>
+            <h1 className="text-xl font-bold text-slate-900 tracking-tight">Print Sticker & NameCard</h1>
           </div>
-          <h1 className="text-xl font-bold text-slate-900 tracking-tight">Print Sticker & NameCard</h1>
+          
+          {(deferredPrompt || showIosInstall) && (
+            <button 
+              onClick={handleInstallClick}
+              className="flex items-center justify-center w-full py-2 bg-slate-900 text-white rounded-lg font-semibold text-sm hover:bg-slate-800 transition-all shadow-md"
+            >
+              <Download size={16} className="mr-2" /> ติดตั้งแอป (Install App)
+            </button>
+          )}
         </div>
 
         {/* Mode Tabs */}
