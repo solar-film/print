@@ -790,12 +790,7 @@ export default function App() {
                   {shouldPrint ? (
                     <div 
                       className="absolute top-0 left-0"
-                      style={mode === 'business-card' ? { width: '100%', height: '100%' } : { 
-                        width: '50mm', 
-                        height: '35mm', 
-                        transform: `scale(${(200/gridCols)/50}, ${(280/gridRows)/35})`,
-                        transformOrigin: 'top left'
-                      }}
+                      style={{ width: '100%', height: '100%' }}
                     >
                       <div className="absolute inset-0 w-full h-full overflow-hidden">
                       
