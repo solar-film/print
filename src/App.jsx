@@ -784,7 +784,7 @@ export default function App() {
               return (
                 <div 
                   key={slotNum} 
-                  className="relative border border-dashed border-slate-100 box-border bg-white overflow-hidden" 
+                  className="relative border border-dashed border-slate-200 print:border-slate-400 box-border bg-white overflow-hidden" 
                   style={mode === 'business-card' ? { width: '90mm', height: '54mm' } : { width: `${200/gridCols}mm`, height: `${280/gridRows}mm` }}
                 >
                   {shouldPrint ? (
