@@ -245,7 +245,7 @@ export default function App() {
 
   const printAreaStyle = mode === 'business-card' 
     ? { width: '210mm', height: '297mm', paddingTop: '13.5mm', paddingLeft: '15mm', paddingRight: '15mm' }
-    : { width: '210mm', height: '297mm', paddingTop: '13.5mm', paddingLeft: '5mm', paddingRight: '5mm' };
+    : { width: '210mm', height: '297mm', paddingTop: '8.5mm', paddingLeft: '5mm', paddingRight: '5mm' };
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row font-sans text-slate-800">
@@ -767,8 +767,8 @@ export default function App() {
           ) : (
             Array.from({ length: gridRows + 1 }).map((_, row) => (
               <React.Fragment key={`h-${row}`}>
-                <div className="absolute left-0 h-0 w-[4mm] border-t border-slate-400 z-20" style={{ top: `calc(13.5mm + ${row * (270/gridRows)}mm)` }} />
-                <div className="absolute right-0 h-0 w-[4mm] border-t border-slate-400 z-20" style={{ top: `calc(13.5mm + ${row * (270/gridRows)}mm)` }} />
+                <div className="absolute left-0 h-0 w-[4mm] border-t border-slate-400 z-20" style={{ top: `calc(8.5mm + ${row * (280/gridRows)}mm)` }} />
+                <div className="absolute right-0 h-0 w-[4mm] border-t border-slate-400 z-20" style={{ top: `calc(8.5mm + ${row * (280/gridRows)}mm)` }} />
               </React.Fragment>
             ))
           )}
@@ -785,7 +785,7 @@ export default function App() {
                 <div 
                   key={slotNum} 
                   className="relative border border-dashed border-slate-300 box-border bg-white overflow-hidden" 
-                  style={mode === 'business-card' ? { width: '90mm', height: '54mm' } : { width: `${200/gridCols}mm`, height: `${270/gridRows}mm` }}
+                  style={mode === 'business-card' ? { width: '90mm', height: '54mm' } : { width: `${200/gridCols}mm`, height: `${280/gridRows}mm` }}
                 >
                   {shouldPrint ? (
                     <div 
