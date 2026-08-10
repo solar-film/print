@@ -744,15 +744,15 @@ export default function App() {
           {mode === 'business-card' ? (
             [0, 1, 2].map((col) => (
               <React.Fragment key={`v-bc-${col}`}>
-                <div className="absolute top-0 w-[1px] h-[5mm] bg-slate-400 z-20" style={{ left: `calc(15mm + ${col * 90}mm)` }} />
-                <div className="absolute bottom-0 w-[1px] h-[5mm] bg-slate-400 z-20" style={{ left: `calc(15mm + ${col * 90}mm)` }} />
+                <div className="absolute top-0 w-0 h-[5mm] border-l border-slate-400 z-20" style={{ left: `calc(15mm + ${col * 90}mm)` }} />
+                <div className="absolute bottom-0 w-0 h-[5mm] border-l border-slate-400 z-20" style={{ left: `calc(15mm + ${col * 90}mm)` }} />
               </React.Fragment>
             ))
           ) : (
             Array.from({ length: gridCols + 1 }).map((_, col) => (
               <React.Fragment key={`v-${col}`}>
-                <div className="absolute top-0 w-[1px] h-[5mm] bg-slate-400 z-20" style={{ left: `calc(5mm + ${col * (200/gridCols)}mm)` }} />
-                <div className="absolute bottom-0 w-[1px] h-[5mm] bg-slate-400 z-20" style={{ left: `calc(5mm + ${col * (200/gridCols)}mm)` }} />
+                <div className="absolute top-0 w-0 h-[5mm] border-l border-slate-400 z-20" style={{ left: `calc(5mm + ${col * (200/gridCols)}mm)` }} />
+                <div className="absolute bottom-0 w-0 h-[5mm] border-l border-slate-400 z-20" style={{ left: `calc(5mm + ${col * (200/gridCols)}mm)` }} />
               </React.Fragment>
             ))
           )}
@@ -760,15 +760,15 @@ export default function App() {
           {mode === 'business-card' ? (
             [0, 1, 2, 3, 4, 5].map((row) => (
               <React.Fragment key={`h-bc-${row}`}>
-                <div className="absolute left-0 h-[1px] w-[4mm] bg-slate-400 z-20" style={{ top: `calc(13.5mm + ${row * 54}mm)` }} />
-                <div className="absolute right-0 h-[1px] w-[4mm] bg-slate-400 z-20" style={{ top: `calc(13.5mm + ${row * 54}mm)` }} />
+                <div className="absolute left-0 h-0 w-[4mm] border-t border-slate-400 z-20" style={{ top: `calc(13.5mm + ${row * 54}mm)` }} />
+                <div className="absolute right-0 h-0 w-[4mm] border-t border-slate-400 z-20" style={{ top: `calc(13.5mm + ${row * 54}mm)` }} />
               </React.Fragment>
             ))
           ) : (
             Array.from({ length: gridRows + 1 }).map((_, row) => (
               <React.Fragment key={`h-${row}`}>
-                <div className="absolute left-0 h-[1px] w-[4mm] bg-slate-400 print:bg-black z-20" style={{ top: `calc(8.5mm + ${row * (280/gridRows)}mm)` }} />
-                <div className="absolute right-0 h-[1px] w-[4mm] bg-slate-400 print:bg-black z-20" style={{ top: `calc(8.5mm + ${row * (280/gridRows)}mm)` }} />
+                <div className="absolute left-0 h-0 w-[4mm] border-t border-slate-400 z-20" style={{ top: `calc(8.5mm + ${row * (280/gridRows)}mm)` }} />
+                <div className="absolute right-0 h-0 w-[4mm] border-t border-slate-400 z-20" style={{ top: `calc(8.5mm + ${row * (280/gridRows)}mm)` }} />
               </React.Fragment>
             ))
           )}
