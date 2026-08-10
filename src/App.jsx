@@ -744,15 +744,15 @@ export default function App() {
           {mode === 'business-card' ? (
             [0, 1, 2].map((col) => (
               <React.Fragment key={`v-bc-${col}`}>
-                <div className="absolute top-0 w-[1px] h-[5mm] bg-slate-400 print:bg-black z-20" style={{ left: `calc(15mm + ${col * 90}mm)` }} />
-                <div className="absolute bottom-0 w-[1px] h-[5mm] bg-slate-400 print:bg-black z-20" style={{ left: `calc(15mm + ${col * 90}mm)` }} />
+                <div className="absolute top-0 w-[1px] h-[5mm] bg-slate-400 z-20" style={{ left: `calc(15mm + ${col * 90}mm)` }} />
+                <div className="absolute bottom-0 w-[1px] h-[5mm] bg-slate-400 z-20" style={{ left: `calc(15mm + ${col * 90}mm)` }} />
               </React.Fragment>
             ))
           ) : (
             Array.from({ length: gridCols + 1 }).map((_, col) => (
               <React.Fragment key={`v-${col}`}>
-                <div className="absolute top-0 w-[1px] h-[5mm] bg-slate-400 print:bg-black z-20" style={{ left: `calc(5mm + ${col * (200/gridCols)}mm)` }} />
-                <div className="absolute bottom-0 w-[1px] h-[5mm] bg-slate-400 print:bg-black z-20" style={{ left: `calc(5mm + ${col * (200/gridCols)}mm)` }} />
+                <div className="absolute top-0 w-[1px] h-[5mm] bg-slate-400 z-20" style={{ left: `calc(5mm + ${col * (200/gridCols)}mm)` }} />
+                <div className="absolute bottom-0 w-[1px] h-[5mm] bg-slate-400 z-20" style={{ left: `calc(5mm + ${col * (200/gridCols)}mm)` }} />
               </React.Fragment>
             ))
           )}
@@ -760,8 +760,8 @@ export default function App() {
           {mode === 'business-card' ? (
             [0, 1, 2, 3, 4, 5].map((row) => (
               <React.Fragment key={`h-bc-${row}`}>
-                <div className="absolute left-0 h-[1px] w-[4mm] bg-slate-400 print:bg-black z-20" style={{ top: `calc(13.5mm + ${row * 54}mm)` }} />
-                <div className="absolute right-0 h-[1px] w-[4mm] bg-slate-400 print:bg-black z-20" style={{ top: `calc(13.5mm + ${row * 54}mm)` }} />
+                <div className="absolute left-0 h-[1px] w-[4mm] bg-slate-400 z-20" style={{ top: `calc(13.5mm + ${row * 54}mm)` }} />
+                <div className="absolute right-0 h-[1px] w-[4mm] bg-slate-400 z-20" style={{ top: `calc(13.5mm + ${row * 54}mm)` }} />
               </React.Fragment>
             ))
           ) : (
@@ -784,7 +784,7 @@ export default function App() {
               return (
                 <div 
                   key={slotNum} 
-                  className="relative border border-dashed border-slate-200 print:border-slate-400 box-border bg-white overflow-hidden" 
+                  className="relative border border-dashed border-slate-300 box-border bg-white overflow-hidden" 
                   style={mode === 'business-card' ? { width: '90mm', height: '54mm' } : { width: `${200/gridCols}mm`, height: `${280/gridRows}mm` }}
                 >
                   {shouldPrint ? (
