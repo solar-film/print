@@ -819,15 +819,15 @@ export default function App() {
                           {/* Top Header Logos */}
                           <div className="flex justify-between items-start">
                             {/* Main Logo Container */}
-                            <div className="flex items-start justify-start w-[32mm] h-[12.5mm]">
+                            <div className="flex items-start justify-start">
                               {filmLogo1 ? (
-                                <img src={filmLogo1} className="w-full h-full object-contain object-left-top" alt="Logo" />
+                                <img src={filmLogo1} className="max-h-[12.5mm] max-w-[32mm] object-contain object-left-top" alt="Logo" />
                               ) : null}
                             </div>
                             {/* Warranty Badge Container */}
-                            <div className="flex items-start justify-end w-[12mm] h-[8mm]">
+                            <div className="flex items-start justify-end">
                               {filmLogo2 ? (
-                                <img src={filmLogo2} className="w-full h-full object-contain object-right-top" alt="Warranty" />
+                                <img src={filmLogo2} className="max-h-[8mm] max-w-[9mm] object-contain object-right-top" alt="Warranty" />
                               ) : null}
                             </div>
                           </div>
