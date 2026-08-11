@@ -518,6 +518,10 @@ export default function App() {
                                       'shgc': 'Solar Heat Gain Coefficient (SHGC)',
                                       'thickness': 'Nominal Thickness',
                                       'irr': 'Infrared Rejected (IRR)',
+                                      'irr 1400mm': 'Infrared Rejected (IRR 1400nm)',
+                                      'irr 900mm.': 'Infrared Rejected (IRR 900nm)',
+                                      'irr 1400nm': 'Infrared Rejected (IRR 1400nm)',
+                                      'irr 900nm': 'Infrared Rejected (IRR 900nm)',
                                       'uvr': 'UV Rejection (UVR)',
                                       'tser': 'Total Solar Energy Rejected (T-SER)',
                                       't-ser': 'Total Solar Energy Rejected (T-SER)',
@@ -526,7 +530,7 @@ export default function App() {
                                       'ext': 'Visible light reflectance (EXT)',
                                       'construction': 'Construction'
                                     };
-                                    const preferredOrder = ['shgc', 'thickness', 'irr', 'uvr', 'tser', 'vlt', 'intext', 'construction'];
+                                    const preferredOrder = ['shgc', 'thickness', 'irr', 'irr 1400mm', 'irr 900mm.', 'irr 1400nm', 'irr 900nm', 'uvr', 'tser', 'vlt', 'intext', 'construction'];
                                     
                                     preferredOrder.forEach(key => {
                                       if (key === 'intext') {
