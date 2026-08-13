@@ -62,17 +62,17 @@ export default function App() {
 
   // Coupon State
   const [couponImage, setCouponImage] = useState(couponDefaultImage);
-  const [couponPrefix, setCouponPrefix] = useState('202410-');
-  const [couponStartNum, setCouponStartNum] = useState(55);
+  const [couponPrefix, setCouponPrefix] = useState('202608-');
+  const [couponStartNum, setCouponStartNum] = useState(301);
   const [couponNumLength, setCouponNumLength] = useState(3);
   
   const [couponNum1X, setCouponNum1X] = useState(9);
-  const [couponNum1Y, setCouponNum1Y] = useState(12);
+  const [couponNum1Y, setCouponNum1Y] = useState(13.5);
   const [couponNum1Size, setCouponNum1Size] = useState(14);
   const [couponNum1Color, setCouponNum1Color] = useState('#000000');
 
-  const [couponNum2X, setCouponNum2X] = useState(79.5);
-  const [couponNum2Y, setCouponNum2Y] = useState(39);
+  const [couponNum2X, setCouponNum2X] = useState(81.5);
+  const [couponNum2Y, setCouponNum2Y] = useState(38);
   const [couponNum2Size, setCouponNum2Size] = useState(15);
   const [couponNum2Color, setCouponNum2Color] = useState('#000000');
 
