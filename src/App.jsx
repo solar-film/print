@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Settings, Image as ImageIcon, Type, Move, Printer, Download, LayoutGrid, FileText, CreditCard, Plus, Trash2, ArrowRight, Hash, Database, Search, ChevronDown, Loader2, ExternalLink, RefreshCw } from 'lucide-react';
+import { Settings, Image as ImageIcon, Type, Move, Printer, Download, LayoutGrid, FileText, CreditCard, Ticket, Plus, Trash2, ArrowRight, Hash, Database, Search, ChevronDown, Loader2, ExternalLink, RefreshCw } from 'lucide-react';
 import Papa from 'papaparse';
 import { toPng } from 'html-to-image';
 import { jsPDF } from 'jspdf';
@@ -58,6 +58,22 @@ export default function App() {
 
   // Business Card State
   const [businessCardImage, setBusinessCardImage] = useState(null);
+
+  // Coupon State
+  const [couponImage, setCouponImage] = useState(null);
+  const [couponPrefix, setCouponPrefix] = useState('202410-');
+  const [couponStartNum, setCouponStartNum] = useState(55);
+  const [couponNumLength, setCouponNumLength] = useState(3);
+  
+  const [couponNum1X, setCouponNum1X] = useState(10);
+  const [couponNum1Y, setCouponNum1Y] = useState(15);
+  const [couponNum1Size, setCouponNum1Size] = useState(16);
+  const [couponNum1Color, setCouponNum1Color] = useState('#000000');
+
+  const [couponNum2X, setCouponNum2X] = useState(85);
+  const [couponNum2Y, setCouponNum2Y] = useState(25);
+  const [couponNum2Size, setCouponNum2Size] = useState(16);
+  const [couponNum2Color, setCouponNum2Color] = useState('#000000');
 
   // Database State
   const [customDatabase, setCustomDatabase] = useState(() => {
@@ -240,11 +256,13 @@ export default function App() {
     }
   };
 
-  const totalSlots = mode === 'business-card' ? 10 : gridCols * gridRows;
+  const totalSlots = mode === 'business-card' ? 10 : mode === 'coupon' ? 6 : gridCols * gridRows;
   const slots = Array.from({ length: totalSlots }, (_, i) => i + 1);
 
   const printAreaStyle = mode === 'business-card' 
     ? { width: '210mm', height: '297mm', paddingTop: '13.5mm', paddingLeft: '15mm', paddingRight: '15mm' }
+    : mode === 'coupon'
+    ? { width: '210mm', height: '297mm', paddingTop: '5mm', paddingLeft: '5mm', paddingRight: '5mm' }
     : { width: '210mm', height: '297mm', paddingTop: '8.5mm', paddingLeft: '5mm', paddingRight: '5mm' };
 
   return (
@@ -290,9 +308,17 @@ export default function App() {
           >
             <CreditCard size={16} className="mr-1" /> นามบัตร
           </button>
+          
+          <button 
+            onClick={() => setMode('coupon')}
+            className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all flex justify-center items-center ${mode === 'coupon' ? 'bg-red-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-200'}`}
+          >
+            <Ticket className="w-5 h-5 mr-2" />
+            <span className="font-medium tracking-wide">คูปอง</span>
+          </button>
         </div>
 
-        <div className="p-6 flex-1 flex flex-col space-y-6">
+        <div className="flex-grow overflow-y-auto p-6 space-y-6">
           
           {mode === 'general' && (
             <>
@@ -660,6 +686,105 @@ export default function App() {
               )}
             </div>
           )}
+          {mode === 'coupon' && (
+            <div className="space-y-4">
+              <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider flex items-center">
+                <Ticket size={16} className="mr-2" /> คูปอง (Coupon)
+              </h2>
+              <div className="border-2 border-dashed border-slate-300 rounded-xl p-4 text-center hover:bg-slate-50 transition-colors cursor-pointer relative group">
+                <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, setCouponImage)} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
+                {couponImage ? (
+                  <div className="relative h-24 w-full rounded-md overflow-hidden flex items-center justify-center bg-slate-100">
+                    <img src={couponImage} alt="Coupon Template" className="h-full object-contain" />
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <span className="text-white text-xs font-medium">เปลี่ยนเทมเพลต</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="py-6 flex flex-col items-center">
+                    <div className="bg-red-50 p-3 rounded-full text-red-600 mb-2">
+                      <ImageIcon size={28} />
+                    </div>
+                    <span className="text-sm font-medium text-slate-600">คลิกเพื่ออัปโหลดไฟล์เทมเพลต</span>
+                    <span className="text-xs text-slate-400 mt-1">สัดส่วนกว้าง 200mm สูง 47.8mm</span>
+                  </div>
+                )}
+              </div>
+              {couponImage && (
+                <button onClick={() => setCouponImage(null)} className="text-xs text-red-500 hover:text-red-600 font-medium w-full text-right">นำรูปภาพออก</button>
+              )}
+
+              <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-4">
+                <h3 className="text-xs font-bold text-slate-800 uppercase">ตั้งค่าเลขรัน</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="col-span-2">
+                    <label className="block text-xs font-medium text-slate-600 mb-1">คำนำหน้า (Prefix)</label>
+                    <input type="text" value={couponPrefix} onChange={e => setCouponPrefix(e.target.value)} className="w-full px-2 py-1.5 text-sm border border-slate-300 rounded outline-none" placeholder="202410-" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">เลขเริ่มต้น</label>
+                    <input type="number" value={couponStartNum} onChange={e => setCouponStartNum(Number(e.target.value))} className="w-full px-2 py-1.5 text-sm border border-slate-300 rounded outline-none" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">หลัก (Padding)</label>
+                    <input type="number" min="1" max="10" value={couponNumLength} onChange={e => setCouponNumLength(Number(e.target.value))} className="w-full px-2 py-1.5 text-sm border border-slate-300 rounded outline-none" />
+                  </div>
+                </div>
+                
+                <h3 className="text-xs font-bold text-slate-800 uppercase pt-2 border-t border-slate-100">ตำแหน่งเลขจุดที่ 1 (ซ้าย)</h3>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-[10px] font-medium text-slate-500 flex justify-between">
+                      <span>ซ้าย-ขวา (X)</span><span>{couponNum1X}%</span>
+                    </label>
+                    <input type="range" min="0" max="100" value={couponNum1X} onChange={e => setCouponNum1X(Number(e.target.value))} className="w-full" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-medium text-slate-500 flex justify-between">
+                      <span>บน-ล่าง (Y)</span><span>{couponNum1Y}%</span>
+                    </label>
+                    <input type="range" min="0" max="100" value={couponNum1Y} onChange={e => setCouponNum1Y(Number(e.target.value))} className="w-full" />
+                  </div>
+                  <div className="flex space-x-2">
+                    <div className="flex-1">
+                      <label className="block text-[10px] font-medium text-slate-500">ขนาดฟอนต์</label>
+                      <input type="number" value={couponNum1Size} onChange={e => setCouponNum1Size(Number(e.target.value))} className="w-full px-2 py-1 text-sm border border-slate-300 rounded outline-none" />
+                    </div>
+                    <div className="flex-1">
+                      <label className="block text-[10px] font-medium text-slate-500">สีข้อความ</label>
+                      <input type="color" value={couponNum1Color} onChange={e => setCouponNum1Color(e.target.value)} className="w-full h-7 p-0 border-0 rounded cursor-pointer" />
+                    </div>
+                  </div>
+                </div>
+
+                <h3 className="text-xs font-bold text-slate-800 uppercase pt-2 border-t border-slate-100">ตำแหน่งเลขจุดที่ 2 (ขวา)</h3>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-[10px] font-medium text-slate-500 flex justify-between">
+                      <span>ซ้าย-ขวา (X)</span><span>{couponNum2X}%</span>
+                    </label>
+                    <input type="range" min="0" max="100" value={couponNum2X} onChange={e => setCouponNum2X(Number(e.target.value))} className="w-full" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-medium text-slate-500 flex justify-between">
+                      <span>บน-ล่าง (Y)</span><span>{couponNum2Y}%</span>
+                    </label>
+                    <input type="range" min="0" max="100" value={couponNum2Y} onChange={e => setCouponNum2Y(Number(e.target.value))} className="w-full" />
+                  </div>
+                  <div className="flex space-x-2">
+                    <div className="flex-1">
+                      <label className="block text-[10px] font-medium text-slate-500">ขนาดฟอนต์</label>
+                      <input type="number" value={couponNum2Size} onChange={e => setCouponNum2Size(Number(e.target.value))} className="w-full px-2 py-1 text-sm border border-slate-300 rounded outline-none" />
+                    </div>
+                    <div className="flex-1">
+                      <label className="block text-[10px] font-medium text-slate-500">สีข้อความ</label>
+                      <input type="color" value={couponNum2Color} onChange={e => setCouponNum2Color(e.target.value)} className="w-full h-7 p-0 border-0 rounded cursor-pointer" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Common Layout Settings */}
           <div className="space-y-4 pt-4 border-t border-slate-100">
@@ -681,7 +806,7 @@ export default function App() {
               </div>
             </div>
             
-            {mode !== 'business-card' && (
+            {mode !== 'business-card' && mode !== 'coupon' && (
               <>
                 <div className="grid grid-cols-2 gap-4 mt-2">
                   <div>
@@ -722,7 +847,7 @@ export default function App() {
 
         {/* Action Buttons */}
         <div className="p-6 border-t border-slate-100 bg-white flex flex-col space-y-3">
-          <button onClick={handlePrint} className={`w-full text-white font-semibold py-3 px-4 rounded-xl flex items-center justify-center space-x-2 transition-all shadow-md ${mode === 'film' ? 'bg-slate-800 hover:bg-slate-900 shadow-slate-300' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-200'}`}>
+          <button onClick={handlePrint} className={`w-full text-white font-semibold py-3 px-4 rounded-xl flex items-center justify-center space-x-2 transition-all shadow-md ${mode === 'film' ? 'bg-slate-800 hover:bg-slate-900 shadow-slate-300' : mode === 'coupon' ? 'bg-red-600 hover:bg-red-700 shadow-red-200' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-200'}`}>
             <Printer size={20} />
             <span>สั่งพิมพ์ (Print)</span>
           </button>
@@ -752,6 +877,13 @@ export default function App() {
                 <div className="absolute bottom-0 w-0 h-[5mm] border-l border-slate-400 z-20" style={{ left: `calc(15mm + ${col * 90}mm)` }} />
               </React.Fragment>
             ))
+          ) : mode === 'coupon' ? (
+            [0, 1].map((col) => (
+              <React.Fragment key={`v-coupon-${col}`}>
+                <div className="absolute top-0 w-0 h-[5mm] border-l border-slate-400 z-20" style={{ left: `calc(5mm + ${col * 200}mm)` }} />
+                <div className="absolute bottom-0 w-0 h-[5mm] border-l border-slate-400 z-20" style={{ left: `calc(5mm + ${col * 200}mm)` }} />
+              </React.Fragment>
+            ))
           ) : (
             Array.from({ length: gridCols + 1 }).map((_, col) => (
               <React.Fragment key={`v-${col}`}>
@@ -768,6 +900,13 @@ export default function App() {
                 <div className="absolute right-0 h-0 w-[4mm] border-t border-slate-400 z-20" style={{ top: `calc(13.5mm + ${row * 54}mm)` }} />
               </React.Fragment>
             ))
+          ) : mode === 'coupon' ? (
+            [0, 1, 2, 3, 4, 5, 6].map((row) => (
+              <React.Fragment key={`h-coupon-${row}`}>
+                <div className="absolute left-0 h-0 w-[4mm] border-t border-slate-400 z-20" style={{ top: `calc(5mm + ${row * 47.8}mm)` }} />
+                <div className="absolute right-0 h-0 w-[4mm] border-t border-slate-400 z-20" style={{ top: `calc(5mm + ${row * 47.8}mm)` }} />
+              </React.Fragment>
+            ))
           ) : (
             Array.from({ length: gridRows + 1 }).map((_, row) => (
               <React.Fragment key={`h-${row}`}>
@@ -779,8 +918,8 @@ export default function App() {
 
           {/* Grid */}
           <div 
-            className={`grid gap-0 border-none w-fit ${mode === 'business-card' ? 'grid-cols-2 grid-rows-5' : ''}`}
-            style={mode !== 'business-card' ? { gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))`, gridTemplateRows: `repeat(${gridRows}, minmax(0, 1fr))` } : undefined}
+            className={`grid gap-0 border-none w-fit ${mode === 'business-card' ? 'grid-cols-2 grid-rows-5' : mode === 'coupon' ? 'grid-cols-1 grid-rows-6' : ''}`}
+            style={mode !== 'business-card' && mode !== 'coupon' ? { gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))`, gridTemplateRows: `repeat(${gridRows}, minmax(0, 1fr))` } : undefined}
           >
             {slots.map((slotNum) => {
               const shouldPrint = slotNum >= startPos && slotNum < startPos + quantity;
@@ -789,7 +928,7 @@ export default function App() {
                 <div 
                   key={slotNum} 
                   className="relative border border-dashed border-slate-300 box-border bg-white overflow-hidden" 
-                  style={mode === 'business-card' ? { width: '90mm', height: '54mm' } : { width: `${200/gridCols}mm`, height: `${275/gridRows}mm` }}
+                  style={mode === 'business-card' ? { width: '90mm', height: '54mm' } : mode === 'coupon' ? { width: '200mm', height: '47.8mm' } : { width: `${200/gridCols}mm`, height: `${275/gridRows}mm` }}
                 >
                   {shouldPrint ? (
                     <div 
@@ -812,6 +951,20 @@ export default function App() {
                       {mode === 'business-card' && (
                         <>
                           {businessCardImage ? <img src={businessCardImage} className="absolute inset-0 w-full h-full object-fill z-0" alt="" /> : <div className="absolute inset-0 w-full h-full bg-white z-0" />}
+                        </>
+                      )}
+
+                      {mode === 'coupon' && (
+                        <>
+                          {couponImage ? <img src={couponImage} className="absolute inset-0 w-full h-full object-fill z-0" alt="" /> : <div className="absolute inset-0 w-full h-full bg-white z-0" />}
+                          <div className="absolute inset-0 z-10 overflow-hidden pointer-events-none">
+                            <span style={{ color: couponNum1Color, fontSize: `${couponNum1Size}px`, left: `${couponNum1X}%`, top: `${couponNum1Y}%`, transform: 'translate(-50%, -50%)', position: 'absolute' }} className="font-bold leading-none text-center whitespace-nowrap">
+                              {couponPrefix}{(couponStartNum + slotNum - 1).toString().padStart(couponNumLength, '0')}
+                            </span>
+                            <span style={{ color: couponNum2Color, fontSize: `${couponNum2Size}px`, left: `${couponNum2X}%`, top: `${couponNum2Y}%`, transform: 'translate(-50%, -50%)', position: 'absolute' }} className="font-bold leading-none text-center whitespace-nowrap">
+                              {couponPrefix}{(couponStartNum + slotNum - 1).toString().padStart(couponNumLength, '0')}
+                            </span>
+                          </div>
                         </>
                       )}
 
