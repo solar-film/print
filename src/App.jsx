@@ -883,8 +883,7 @@ export default function App() {
           const pageStartSlot = pageIndex * totalSlots + 1;
           
           return (
-          {/* A4 Paper Container */}
-          <div key={pageIndex} ref={pageIndex === 0 ? printAreaRef : null} className="print-area bg-white shadow-2xl print:shadow-none print-area-bg relative box-border flex-shrink-0" style={printAreaStyle}>
+            <div key={pageIndex} ref={pageIndex === 0 ? printAreaRef : null} className="print-area bg-white shadow-2xl print:shadow-none print-area-bg relative box-border flex-shrink-0" style={printAreaStyle}>
           
           {/* Vertical Marks */}
           {mode === 'business-card' ? (
