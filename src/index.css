@@ -56,6 +56,11 @@
     background: white;
     margin: 0;
     padding: 0;
+    break-after: page;
+  }
+  
+  .print-area:last-child {
+    break-after: auto;
   }
   
   /* Reset background of print area */

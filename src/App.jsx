@@ -235,19 +235,28 @@ export default function App() {
   };
   
   const handleSavePDF = async () => {
-    if (!printAreaRef.current) return;
     try {
       setIsGeneratingPDF(true);
-      const imgData = await toPng(printAreaRef.current, {
-        pixelRatio: 2,
-        cacheBust: true,
-      });
+      const printAreas = document.querySelectorAll('.print-area');
+      if (printAreas.length === 0) return;
+      
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
         format: 'a4'
       });
-      pdf.addImage(imgData, 'PNG', 0, 0, 210, 297);
+      
+      for (let i = 0; i < printAreas.length; i++) {
+        const imgData = await toPng(printAreas[i], {
+          pixelRatio: 2,
+          cacheBust: true,
+        });
+        if (i > 0) {
+          pdf.addPage();
+        }
+        pdf.addImage(imgData, 'PNG', 0, 0, 210, 297);
+      }
+      
       pdf.save('sticker-layout.pdf');
     } catch (error) {
       console.error("Error generating PDF:", error);
@@ -259,6 +268,9 @@ export default function App() {
 
   const totalSlots = mode === 'business-card' ? 10 : mode === 'coupon' ? 6 : gridCols * gridRows;
   const slots = Array.from({ length: totalSlots }, (_, i) => i + 1);
+  const totalItemsNeeded = (startPos - 1) + quantity;
+  const totalPages = Math.ceil(totalItemsNeeded / totalSlots);
+  const pagesArray = Array.from({ length: Math.max(1, totalPages) }, (_, i) => i);
 
   const printAreaStyle = mode === 'business-card' 
     ? { width: '210mm', height: '297mm', paddingTop: '13.5mm', paddingLeft: '15mm', paddingRight: '15mm' }
@@ -865,10 +877,14 @@ export default function App() {
       </aside>
 
       {/* Main Preview Area */}
-      <main className="flex-1 p-4 md:p-8 overflow-auto flex justify-center items-start bg-slate-100 print:p-0 print:bg-white print:overflow-visible">
+      <main className="flex-1 p-4 md:p-8 overflow-auto flex flex-col items-center bg-slate-100 print:p-0 print:bg-white print:overflow-visible space-y-8 print:space-y-0">
         
-        {/* A4 Paper Container */}
-        <div ref={printAreaRef} className="print-area bg-white shadow-2xl print:shadow-none print-area-bg relative box-border" style={printAreaStyle}>
+        {pagesArray.map((pageIndex) => {
+          const pageStartSlot = pageIndex * totalSlots + 1;
+          
+          return (
+          {/* A4 Paper Container */}
+          <div key={pageIndex} ref={pageIndex === 0 ? printAreaRef : null} className="print-area bg-white shadow-2xl print:shadow-none print-area-bg relative box-border flex-shrink-0" style={printAreaStyle}>
           
           {/* Vertical Marks */}
           {mode === 'business-card' ? (
@@ -922,7 +938,8 @@ export default function App() {
             className={`grid gap-0 border-none w-fit ${mode === 'business-card' ? 'grid-cols-2 grid-rows-5' : mode === 'coupon' ? 'grid-cols-1 grid-rows-6' : ''}`}
             style={mode !== 'business-card' && mode !== 'coupon' ? { gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))`, gridTemplateRows: `repeat(${gridRows}, minmax(0, 1fr))` } : undefined}
           >
-            {slots.map((slotNum) => {
+            {slots.map((slotIndex) => {
+              const slotNum = pageStartSlot + slotIndex - 1;
               const shouldPrint = slotNum >= startPos && slotNum < startPos + quantity;
               
               return (
@@ -1023,6 +1040,7 @@ export default function App() {
             })}
           </div>
         </div>
+        ); })}
         
       </main>
 
