@@ -5,6 +5,7 @@ import { toPng } from 'html-to-image';
 import { jsPDF } from 'jspdf';
 import { filmDatabase } from './data/filmDatabase';
 import DatabaseManager from './components/DatabaseManager';
+import couponDefaultImage from './assets/templates/coupon.png';
 
 // Load all images from the templates directory automatically
 const templateFiles = import.meta.glob('./assets/templates/*.{png,jpg,jpeg,svg,webp,PNG,JPG,JPEG}', { eager: true, import: 'default' });
@@ -60,19 +61,19 @@ export default function App() {
   const [businessCardImage, setBusinessCardImage] = useState(null);
 
   // Coupon State
-  const [couponImage, setCouponImage] = useState(null);
+  const [couponImage, setCouponImage] = useState(couponDefaultImage);
   const [couponPrefix, setCouponPrefix] = useState('202410-');
   const [couponStartNum, setCouponStartNum] = useState(55);
   const [couponNumLength, setCouponNumLength] = useState(3);
   
-  const [couponNum1X, setCouponNum1X] = useState(10);
-  const [couponNum1Y, setCouponNum1Y] = useState(15);
-  const [couponNum1Size, setCouponNum1Size] = useState(16);
+  const [couponNum1X, setCouponNum1X] = useState(9);
+  const [couponNum1Y, setCouponNum1Y] = useState(12);
+  const [couponNum1Size, setCouponNum1Size] = useState(14);
   const [couponNum1Color, setCouponNum1Color] = useState('#000000');
 
-  const [couponNum2X, setCouponNum2X] = useState(85);
-  const [couponNum2Y, setCouponNum2Y] = useState(25);
-  const [couponNum2Size, setCouponNum2Size] = useState(16);
+  const [couponNum2X, setCouponNum2X] = useState(79.5);
+  const [couponNum2Y, setCouponNum2Y] = useState(39);
+  const [couponNum2Size, setCouponNum2Size] = useState(15);
   const [couponNum2Color, setCouponNum2Color] = useState('#000000');
 
   // Database State
@@ -300,7 +301,7 @@ export default function App() {
             onClick={() => setMode('film')}
             className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all flex justify-center items-center ${mode === 'film' ? 'bg-slate-800 text-white shadow-md' : 'text-slate-500 hover:bg-slate-200'}`}
           >
-            <FileText size={16} className="mr-1" /> กรองแสง
+            <FileText size={16} className="mr-1" /> ฟิล์ม
           </button>
           <button 
             onClick={() => setMode('business-card')}
@@ -737,13 +738,13 @@ export default function App() {
                     <label className="block text-[10px] font-medium text-slate-500 flex justify-between">
                       <span>ซ้าย-ขวา (X)</span><span>{couponNum1X}%</span>
                     </label>
-                    <input type="range" min="0" max="100" value={couponNum1X} onChange={e => setCouponNum1X(Number(e.target.value))} className="w-full" />
+                    <input type="range" min="0" max="100" step="0.5" value={couponNum1X} onChange={e => setCouponNum1X(Number(e.target.value))} className="w-full" />
                   </div>
                   <div>
                     <label className="block text-[10px] font-medium text-slate-500 flex justify-between">
                       <span>บน-ล่าง (Y)</span><span>{couponNum1Y}%</span>
                     </label>
-                    <input type="range" min="0" max="100" value={couponNum1Y} onChange={e => setCouponNum1Y(Number(e.target.value))} className="w-full" />
+                    <input type="range" min="0" max="100" step="0.5" value={couponNum1Y} onChange={e => setCouponNum1Y(Number(e.target.value))} className="w-full" />
                   </div>
                   <div className="flex space-x-2">
                     <div className="flex-1">
@@ -763,13 +764,13 @@ export default function App() {
                     <label className="block text-[10px] font-medium text-slate-500 flex justify-between">
                       <span>ซ้าย-ขวา (X)</span><span>{couponNum2X}%</span>
                     </label>
-                    <input type="range" min="0" max="100" value={couponNum2X} onChange={e => setCouponNum2X(Number(e.target.value))} className="w-full" />
+                    <input type="range" min="0" max="100" step="0.5" value={couponNum2X} onChange={e => setCouponNum2X(Number(e.target.value))} className="w-full" />
                   </div>
                   <div>
                     <label className="block text-[10px] font-medium text-slate-500 flex justify-between">
                       <span>บน-ล่าง (Y)</span><span>{couponNum2Y}%</span>
                     </label>
-                    <input type="range" min="0" max="100" value={couponNum2Y} onChange={e => setCouponNum2Y(Number(e.target.value))} className="w-full" />
+                    <input type="range" min="0" max="100" step="0.5" value={couponNum2Y} onChange={e => setCouponNum2Y(Number(e.target.value))} className="w-full" />
                   </div>
                   <div className="flex space-x-2">
                     <div className="flex-1">
@@ -794,9 +795,9 @@ export default function App() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1 flex items-center">
-                  <Hash size={14} className="mr-1 text-slate-400" /> จำนวนดวง
+                  <Hash size={14} className="mr-1 text-slate-400" /> {mode === 'coupon' ? 'จำนวนแผ่น (แผ่นละ 6 ใบ)' : 'จำนวนดวง'}
                 </label>
-                <input type="number" min="1" max={totalSlots} value={quantity} onChange={(e) => setQuantity(Number(e.target.value))} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                <input type="number" min="1" max={mode === 'coupon' ? undefined : totalSlots} value={mode === 'coupon' ? Math.ceil(quantity / 6) : quantity} onChange={(e) => setQuantity(mode === 'coupon' ? Number(e.target.value) * 6 : Number(e.target.value))} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1 flex items-center" title="เริ่มพิมพ์จากช่องที่ N">
