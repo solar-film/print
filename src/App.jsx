@@ -279,7 +279,7 @@ export default function App() {
     : { width: '210mm', height: '297mm', paddingTop: '8.5mm', paddingLeft: '5mm', paddingRight: '5mm' };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row font-sans text-slate-800">
+    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row font-sans text-slate-800 print:block">
       
       {/* Sidebar */}
       <aside className="w-full md:w-[350px] bg-white border-r border-slate-200 shadow-sm flex flex-col h-screen md:sticky top-0 z-10 print:hidden overflow-y-auto">
@@ -877,7 +877,7 @@ export default function App() {
       </aside>
 
       {/* Main Preview Area */}
-      <main className="flex-1 p-4 md:p-8 overflow-auto flex flex-col items-center bg-slate-100 print:p-0 print:bg-white print:overflow-visible space-y-8 print:space-y-0">
+      <main className="flex-1 p-4 md:p-8 overflow-auto flex flex-col items-center bg-slate-100 print:p-0 print:bg-white print:overflow-visible space-y-8 print:space-y-0 print:block">
         
         {pagesArray.map((pageIndex) => {
           const pageStartSlot = pageIndex * totalSlots + 1;
