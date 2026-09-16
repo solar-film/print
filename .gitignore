@@ -23,3 +23,14 @@ dist_electron
 *.njsproj
 *.sln
 *.sw?
+
+# Temporary / generated files
+curl_output.html
+runs.json
+.upload-checkout
+upload-build.log
+public/test.csv
+public/test2.csv
+
+# Electron (desktop app - not needed for web)
+electron/
