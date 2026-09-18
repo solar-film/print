@@ -18,6 +18,26 @@ function normalizedSpecKey(label) {
   return String(label ?? '').trim().toLowerCase();
 }
 
+function isWarrantyKey(label) {
+  const normalized = normalizedSpecKey(label);
+  return normalized.includes('warranty') || normalized.includes('รับประกัน');
+}
+
+function warrantyValue(film) {
+  const directValue = String(film.warranty ?? '').trim();
+  if (directValue) return directValue;
+
+  const warrantyEntry = Object.entries(film.specs || {})
+    .find(([label]) => isWarrantyKey(label));
+  return String(warrantyEntry?.[1] ?? '').trim();
+}
+
+function displayWarranty(film) {
+  const value = warrantyValue(film);
+  if (!value || value === '00') return '-';
+  return /^\d+(?:\.\d+)?$/.test(value) ? `${value} ปี` : value;
+}
+
 function specRank(label) {
   const normalized = normalizedSpecKey(label);
   const index = preferredSpecOrder.findIndex((key) => normalized === key || normalized.includes(`(${key})`));
@@ -33,7 +53,7 @@ export default function FilmSpecTable({ database, onBack }) {
     database.forEach((film) => {
       Object.keys(film.specs || {}).forEach((label) => {
         const normalized = normalizedSpecKey(label);
-        if (normalized && !labels.has(normalized)) labels.set(normalized, label.trim());
+        if (normalized && !isWarrantyKey(label) && !labels.has(normalized)) labels.set(normalized, label.trim());
       });
     });
 
@@ -49,7 +69,7 @@ export default function FilmSpecTable({ database, onBack }) {
       const specText = Object.entries(film.specs || {})
         .map(([label, value]) => `${label} ${value}`)
         .join(' ');
-      return `${film.brand} ${film.series} ${film.model} ${specText}`
+      return `${film.brand} ${film.series} ${film.model} ${warrantyValue(film)} ${specText}`
         .toLocaleLowerCase('th')
         .includes(term);
     });
@@ -100,7 +120,8 @@ export default function FilmSpecTable({ database, onBack }) {
             <table className="min-w-max w-full border-separate border-spacing-0 text-left text-sm">
               <thead className="sticky top-0 z-20 bg-slate-800 text-white print:static">
                 <tr>
-                  <th className="sticky left-0 z-30 min-w-32 border-b border-r border-slate-700 bg-slate-800 px-4 py-3 font-semibold">ยี่ห้อ</th>
+                  <th className="sticky left-0 z-30 min-w-40 border-b border-r border-slate-700 bg-slate-800 px-4 py-3 text-center font-semibold">ปีรับประกัน</th>
+                  <th className="min-w-32 border-b border-r border-slate-700 px-4 py-3 font-semibold">ยี่ห้อ</th>
                   <th className="min-w-48 border-b border-r border-slate-700 px-4 py-3 font-semibold">ซีรีส์</th>
                   <th className="min-w-44 border-b border-r border-slate-700 px-4 py-3 font-semibold">รุ่น</th>
                   {specColumns.map((column) => (
@@ -118,7 +139,8 @@ export default function FilmSpecTable({ database, onBack }) {
 
                   return (
                     <tr key={`${film.brand}-${film.series}-${film.model}-${index}`} className="group odd:bg-white even:bg-slate-50/70 hover:bg-blue-50">
-                      <td className="sticky left-0 z-10 border-b border-r border-slate-200 bg-inherit px-4 py-3 font-semibold text-slate-900 group-hover:bg-blue-50">{film.brand || '-'}</td>
+                      <td className="sticky left-0 z-10 border-b border-r border-slate-200 bg-inherit px-4 py-3 text-center font-semibold text-blue-700 group-hover:bg-blue-50">{displayWarranty(film)}</td>
+                      <td className="border-b border-r border-slate-200 px-4 py-3 font-semibold text-slate-900">{film.brand || '-'}</td>
                       <td className="border-b border-r border-slate-200 px-4 py-3 text-slate-700">{film.series || '-'}</td>
                       <td className="border-b border-r border-slate-200 px-4 py-3 font-medium text-slate-800">{film.model || '-'}</td>
                       {specColumns.map((column) => {
@@ -134,7 +156,7 @@ export default function FilmSpecTable({ database, onBack }) {
                 })}
                 {filteredFilms.length === 0 && (
                   <tr>
-                    <td colSpan={3 + specColumns.length} className="px-6 py-16 text-center text-base text-slate-500">
+                    <td colSpan={4 + specColumns.length} className="px-6 py-16 text-center text-base text-slate-500">
                       ไม่พบรายการฟิล์มที่ค้นหา
                     </td>
                   </tr>
