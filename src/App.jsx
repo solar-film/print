@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Settings, Image as ImageIcon, Type, Move, Printer, Download, LayoutGrid, FileText, CreditCard, Ticket, Plus, Trash2, ArrowRight, Hash, Database, Search, ChevronDown, Loader2, ExternalLink, RefreshCw, TableProperties } from 'lucide-react';
+import { Settings, Image as ImageIcon, Type, Move, Printer, Download, LayoutGrid, FileText, CreditCard, Ticket, Plus, Trash2, ArrowRight, Hash, Database, Search, ChevronDown, Loader2, TableProperties } from 'lucide-react';
 import Papa from 'papaparse';
 import { toPng } from 'html-to-image';
 import { jsPDF } from 'jspdf';
@@ -28,6 +28,38 @@ const predefinedWarranties = Object.keys(warrantyFiles).map((path, index) => {
   const filename = path.split('/').pop();
   return { id: index, name: filename, url: warrantyFiles[path] };
 });
+
+function assetKey(value) {
+  return String(value ?? '')
+    .replace(/\.[^.]+$/, '')
+    .toUpperCase()
+    .replace(/[^A-Z0-9฀-๿]/g, '');
+}
+
+function matchingFilmLogo(film) {
+  const brandKey = assetKey(film.brand);
+  const filmKey = assetKey(`${film.brand} ${film.series} ${film.model}`);
+  const preferredKey = filmKey.includes('COOPER') && filmKey.includes('TPU')
+    ? 'COOPERTPU'
+    : filmKey.includes('IZYKOOL') && filmKey.includes('CERAMIC')
+      ? 'IZYKOOLCERAMIC'
+      : brandKey;
+
+  return predefinedLogos.find((logo) => assetKey(logo.name) === preferredKey)?.url
+    || predefinedLogos.find((logo) => assetKey(logo.name) === brandKey)?.url
+    || null;
+}
+
+function matchingWarrantyBadge(film) {
+  const legacyWarranty = Object.entries(film.specs || {})
+    .find(([label]) => /warranty|รับประกัน/i.test(label))?.[1];
+  const years = String(film.warranty || legacyWarranty || '')
+    .match(/\d+(?:\.\d+)?/)?.[0]?.replace(/\.0+$/, '');
+  if (!years) return null;
+
+  const expectedKey = `WARRANTY${years}YR`;
+  return predefinedWarranties.find((badge) => assetKey(badge.name) === expectedKey)?.url || null;
+}
 
 export default function App() {
   const { notify } = useDialog();
@@ -61,6 +93,7 @@ export default function App() {
   
   const [filmLogo1, setFilmLogo1] = useState(null);
   const [filmLogo2, setFilmLogo2] = useState(null);
+  const [showFilmSettings, setShowFilmSettings] = useState(false);
 
   // Business Card State
   const [businessCardImage, setBusinessCardImage] = useState(null);
@@ -96,7 +129,6 @@ export default function App() {
     return filmDatabase;
   });
   const [isDbManagerOpen, setIsDbManagerOpen] = useState(false);
-  const [isSyncing, setIsSyncing] = useState(false);
   const [isFilmListPage, setIsFilmListPage] = useState(() => window.location.hash === '#film-specs');
 
   // Grid Settings
@@ -144,11 +176,9 @@ export default function App() {
     }
   };
 
-  const EDIT_URL = 'https://docs.google.com/spreadsheets/d/1Xc4EY34N1u75-N899BUnb4Rrkv-1qq189R1Gqp94aIg/edit';
   const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTKDKVr3RKTRAp3KauC7AYBEcVq4coI9gss_O5iXyIr3mk8M1SA1KNkKy56J40J0xU-lyc3Tbs8HExa/pub?output=csv';
 
   const syncFromGoogleSheets = async (silent = false) => {
-    setIsSyncing(true);
     try {
       const res = await fetch(CSV_URL);
       if (!res.ok) throw new Error('Cannot fetch');
@@ -169,13 +199,11 @@ export default function App() {
           } else if (!silent) {
             notify('ไม่สามารถอ่านรูปแบบข้อมูลได้ กรุณาตรวจสอบไฟล์ CSV แล้วลองอีกครั้ง', { type: 'error', title: 'ซิงค์ข้อมูลไม่สำเร็จ' });
           }
-          setIsSyncing(false);
         }
       });
     } catch (err) {
       console.error('Auto sync failed:', err);
       if (!silent) notify('ไม่สามารถเชื่อมต่อ Google Sheets ได้ กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองอีกครั้ง', { type: 'error', title: 'ซิงค์ข้อมูลไม่สำเร็จ' });
-      setIsSyncing(false);
     }
   };
 
@@ -462,40 +490,16 @@ export default function App() {
 
           {mode === 'film' && (
             <>
-              <a
-                href="#film-specs"
-                className="group flex w-full items-center justify-between rounded-xl border border-blue-200 bg-blue-50/70 px-4 py-3 text-left shadow-sm transition-colors hover:border-blue-300 hover:bg-blue-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
-              >
-                <span className="flex items-center text-sm font-semibold text-blue-900">
-                  <span className="mr-3 flex h-9 w-9 items-center justify-center rounded-lg bg-white text-blue-600 shadow-sm">
-                    <TableProperties size={19} />
-                  </span>
-                  แสดงรายการฟิล์ม
-                </span>
-                <ArrowRight size={18} className="text-blue-500 transition-transform group-hover:translate-x-1" />
-              </a>
-
               {/* Film Mode Form */}
               <div className="space-y-4">
-                <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider flex items-center">
-                  <Type size={16} className="mr-2" /> หัวข้อสเปค
+                <h2 className="flex items-center text-base font-bold text-slate-900">
+                  <Type size={18} className="mr-2 text-blue-600" /> เลือกรุ่นที่ต้องการพิมพ์
                 </h2>
 
-                <div className="bg-blue-50/50 p-3 rounded-lg border border-blue-100 mb-2 relative">
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="block text-xs font-semibold text-blue-800">เลือกข้อมูลอัตโนมัติ (Dropdown)</label>
-                    <div className="flex space-x-1.5">
-                      <button onClick={() => syncFromGoogleSheets(false)} disabled={isSyncing} className="text-[10px] font-medium text-emerald-700 hover:text-emerald-800 flex items-center bg-emerald-100 hover:bg-emerald-200 px-2 py-1 rounded transition-colors disabled:opacity-50">
-                        <RefreshCw size={10} className={`mr-1 ${isSyncing ? 'animate-spin' : ''}`} /> ซิงค์
-                      </button>
-                      <a href={EDIT_URL} target="_blank" rel="noreferrer" className="text-[10px] font-medium text-blue-600 hover:text-blue-800 flex items-center bg-blue-100 hover:bg-blue-200 px-2 py-1 rounded transition-colors">
-                        <ExternalLink size={10} className="mr-1" /> จัดการ
-                      </a>
-                    </div>
-                  </div>
+                <div className="relative mb-2 rounded-xl border-2 border-blue-300 bg-gradient-to-br from-blue-100 via-sky-50 to-indigo-100 p-3 shadow-md shadow-blue-100/80">
                   <div className="relative" ref={dropdownRef}>
                     <div 
-                      className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white flex justify-between items-center cursor-pointer hover:border-blue-400 transition-colors shadow-sm"
+                      className="flex w-full cursor-pointer items-center justify-between rounded-xl border border-blue-300 bg-white px-4 py-3 text-sm shadow-sm transition-all hover:border-blue-500 hover:shadow-md"
                       onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                     >
                       <span className={filmLabel({ brand: filmBrand, series: filmSeries, model: filmModel }) ? "text-slate-800 font-medium" : "text-slate-400"}>
@@ -511,7 +515,7 @@ export default function App() {
                           <input 
                             type="text" 
                             autoFocus
-                            placeholder="ค้นหา ยี่ห้อ, ซีรีส์, รุ่น..." 
+                            placeholder="ค้นหา ยี่ห้อ หรือรุ่น..."
                             className="w-full text-sm bg-transparent outline-none"
                             value={dropdownSearch}
                             onChange={(e) => setDropdownSearch(e.target.value)}
@@ -532,12 +536,14 @@ export default function App() {
                                   setFilmSeries(f.series);
                                   setFilmModel(f.model);
                                   setFilmSpecs(displaySpecs(f.specs));
+                                  setFilmLogo1(matchingFilmLogo(f));
+                                  setFilmLogo2(matchingWarrantyBadge(f));
                                   setIsDropdownOpen(false);
                                   setDropdownSearch('');
                                 }}
                               >
                                 {f.brand && <span className="font-semibold text-blue-800 text-[10px] uppercase tracking-wider mr-2 bg-blue-100 px-1.5 py-0.5 rounded">{f.brand}</span>}
-                                <span className="font-medium text-slate-900">{[f.series, f.model].filter(Boolean).join(" - ")}</span>
+                                <span className="font-medium text-slate-900">{f.model}</span>
                               </div>
                             ))
                           ) : (
@@ -571,14 +577,23 @@ export default function App() {
                 </div>
               </div>
 
-              <details className="group bg-amber-50/80 p-4 rounded-xl border border-amber-200 shadow-sm relative overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setShowFilmSettings((isOpen) => !isOpen)}
+                aria-expanded={showFilmSettings}
+                className="flex w-full items-center justify-between rounded-xl border border-amber-200 bg-amber-50/80 px-4 py-3 text-sm font-bold text-amber-900 shadow-sm transition-colors hover:bg-amber-100 focus-visible:outline-2 focus-visible:outline-amber-500"
+              >
+                <span className="flex items-center"><Settings size={16} className="mr-2 text-amber-600" /> รายละเอียดฟิล์มและการพิมพ์</span>
+                <ChevronDown size={16} className={`text-amber-600 transition-transform ${showFilmSettings ? 'rotate-180' : ''}`} />
+              </button>
+
+              <section className={`${showFilmSettings ? 'block' : 'hidden'} bg-amber-50/80 p-4 rounded-xl border border-amber-200 shadow-sm relative overflow-hidden`}>
                 <div className="absolute top-0 left-0 w-1.5 h-full bg-amber-400"></div>
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded text-sm font-bold text-amber-900 focus-visible:outline-2 focus-visible:outline-amber-500 [&::-webkit-details-marker]:hidden">
+                <h2 className="flex items-center justify-between gap-2 text-sm font-bold text-amber-900">
                   <span className="flex items-center">
                     <Settings size={16} className="mr-2 text-amber-600" /> ค่าสเปค (%)
                   </span>
-                  <ChevronDown size={16} className="text-amber-600 transition-transform group-open:rotate-180" />
-                </summary>
+                </h2>
                   <p className="text-[11px] text-amber-700 leading-snug mt-3 font-medium">
                     ⚠️ ตรวจสอบและแก้ไขค่าให้ตรงรุ่นก่อนพิมพ์
                   </p>
@@ -596,12 +611,12 @@ export default function App() {
                     </div>
                   ))}
                 </div>
-              </details>
+              </section>
 
-              <div className="space-y-3">
-                <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+              <section className={showFilmSettings ? 'space-y-3' : 'hidden'}>
+                <h2 className="flex items-center justify-between text-sm font-semibold uppercase tracking-wider text-slate-400">
                   <span className="flex items-center"><ImageIcon size={16} className="mr-2" /> โลโก้แบรนด์ (ซ้าย)</span>
-                  {filmLogo1 && <button onClick={() => setFilmLogo1(null)} className="text-xs text-red-500 hover:text-red-600 font-medium">นำออก</button>}
+                  {filmLogo1 && <button type="button" onClick={() => setFilmLogo1(null)} className="text-xs font-medium normal-case text-red-500 hover:text-red-600">นำออก</button>}
                 </h2>
                 
                 <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
@@ -626,12 +641,12 @@ export default function App() {
                     </div>
                   )}
                 </div>
-              </div>
+              </section>
 
-              <div className="space-y-3">
-                <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+              <section className={showFilmSettings ? 'space-y-3' : 'hidden'}>
+                <h2 className="flex items-center justify-between text-sm font-semibold uppercase tracking-wider text-slate-400">
                   <span className="flex items-center"><ImageIcon size={16} className="mr-2" /> ตรารับประกัน (ขวา)</span>
-                  {filmLogo2 && <button onClick={() => setFilmLogo2(null)} className="text-xs text-red-500 hover:text-red-600 font-medium">นำออก</button>}
+                  {filmLogo2 && <button type="button" onClick={() => setFilmLogo2(null)} className="text-xs font-medium normal-case text-red-500 hover:text-red-600">นำออก</button>}
                 </h2>
                 
                 <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
@@ -656,7 +671,7 @@ export default function App() {
                     </div>
                   )}
                 </div>
-              </div>
+              </section>
             </>
           )}
 
@@ -790,11 +805,21 @@ export default function App() {
           )}
 
           {/* Common Layout Settings */}
-          <div className="space-y-4 pt-4 border-t border-slate-100">
-            <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider flex items-center">
-              <Settings size={16} className="mr-2" /> การตั้งค่าการพิมพ์
-            </h2>
-            <div className="grid grid-cols-2 gap-4">
+          <details
+            className={mode === 'film' && !showFilmSettings ? 'hidden' : 'group pt-4 border-t border-slate-100'}
+            open={mode === 'film' ? showFilmSettings : undefined}
+            onToggle={(event) => {
+              if (mode === 'film' && event.currentTarget.open !== showFilmSettings) {
+                setShowFilmSettings(event.currentTarget.open);
+              }
+            }}
+          >
+            <summary className="flex cursor-pointer list-none items-center justify-between rounded text-sm font-semibold uppercase tracking-wider text-slate-400 focus-visible:outline-2 focus-visible:outline-blue-500 [&::-webkit-details-marker]:hidden">
+              <span className="flex items-center"><Settings size={16} className="mr-2" /> การตั้งค่าการพิมพ์</span>
+              <ChevronDown size={16} className="transition-transform group-open:rotate-180" />
+            </summary>
+            <div className="mt-4 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1 flex items-center">
                   <Hash size={14} className="mr-1 text-slate-400" /> {mode === 'coupon' ? 'จำนวนแผ่น (แผ่นละ 6 ใบ)' : 'จำนวนดวง'}
@@ -807,11 +832,11 @@ export default function App() {
                 </label>
                 <input type="number" min="1" max={totalSlots} value={startPos} onChange={(e) => setStartPos(Number(e.target.value))} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
               </div>
-            </div>
+              </div>
             
-            {mode !== 'business-card' && mode !== 'coupon' && (
-              <>
-                <div className="grid grid-cols-2 gap-4 mt-2">
+              {mode !== 'business-card' && mode !== 'coupon' && (
+                <>
+                  <div className="grid grid-cols-2 gap-4 mt-2">
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">จำนวนคอลัมน์ (แนวนอน)</label>
                     <input type="number" min="1" max="10" value={gridCols} onChange={(e) => setGridCols(Number(e.target.value))} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
@@ -820,8 +845,8 @@ export default function App() {
                     <label className="block text-sm font-medium text-slate-700 mb-1">จำนวนแถว (แนวตั้ง)</label>
                     <input type="number" min="1" max="20" value={gridRows} onChange={(e) => setGridRows(Number(e.target.value))} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
                   </div>
-                </div>
-                <div className="pt-2 border-t border-slate-100 mt-3">
+                  </div>
+                  <div className="pt-2 border-t border-slate-100 mt-3">
                   <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">ระยะขอบแต่ละดวง (Padding)</label>
                   <div className="grid grid-cols-4 gap-2">
                     <div>
@@ -841,10 +866,26 @@ export default function App() {
                       <input type="number" step="0.5" min="0" value={piecePaddingRight} onChange={(e) => setPiecePaddingRight(Number(e.target.value))} className="w-full px-2 py-1.5 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 outline-none text-xs text-center font-medium" />
                     </div>
                   </div>
-                </div>
-              </>
-            )}
-          </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </details>
+
+          {mode === 'film' && (
+            <a
+              href="#film-specs"
+              className="group flex w-full items-center justify-between rounded-xl border border-blue-200 bg-blue-50/70 px-4 py-3 text-left shadow-sm transition-colors hover:border-blue-300 hover:bg-blue-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+            >
+              <span className="flex items-center text-sm font-semibold text-blue-900">
+                <span className="mr-3 flex h-9 w-9 items-center justify-center rounded-lg bg-white text-blue-600 shadow-sm">
+                  <TableProperties size={19} />
+                </span>
+                แสดงรายการฟิล์ม
+              </span>
+              <ArrowRight size={18} className="text-blue-500 transition-transform group-hover:translate-x-1" />
+            </a>
+          )}
           
         </div>
 
@@ -871,56 +912,50 @@ export default function App() {
         
         {pagesArray.map((pageIndex) => {
           const pageStartSlot = pageIndex * totalSlots + 1;
+          const pageColumns = mode === 'business-card' ? 2 : mode === 'coupon' ? 1 : gridCols;
+          const pageRows = mode === 'business-card' ? 5 : mode === 'coupon' ? 6 : gridRows;
+          const printedSlotIndexes = slots.filter((slotIndex) => {
+            const slotNumber = pageStartSlot + slotIndex - 1;
+            return slotNumber >= startPos && slotNumber < startPos + quantity;
+          });
+          const printedColumns = new Set(printedSlotIndexes.map((slotIndex) => (slotIndex - 1) % pageColumns));
+          const printedRows = new Set(printedSlotIndexes.map((slotIndex) => Math.floor((slotIndex - 1) / pageColumns)));
+          const verticalMarkPositions = Array.from({ length: pageColumns + 1 }, (_, index) => index)
+            .filter((boundary) => printedColumns.has(boundary - 1) || printedColumns.has(boundary));
+          const horizontalMarkPositions = Array.from({ length: pageRows + 1 }, (_, index) => index)
+            .filter((boundary) => printedRows.has(boundary - 1) || printedRows.has(boundary));
           
           return (
             <div key={pageIndex} ref={pageIndex === 0 ? printAreaRef : null} className="print-area bg-white shadow-2xl print:shadow-none print-area-bg relative box-border flex-shrink-0" style={printAreaStyle}>
           
           {/* Vertical Marks */}
-          {mode === 'business-card' ? (
-            [0, 1, 2].map((col) => (
-              <React.Fragment key={`v-bc-${col}`}>
-                <div className="absolute top-0 w-0 h-[5mm] border-l border-slate-400 z-20" style={{ left: `calc(15mm + ${col * 90}mm)` }} />
-                <div className="absolute bottom-0 w-0 h-[5mm] border-l border-slate-400 z-20" style={{ left: `calc(15mm + ${col * 90}mm)` }} />
-              </React.Fragment>
-            ))
-          ) : mode === 'coupon' ? (
-            [0, 1].map((col) => (
-              <React.Fragment key={`v-coupon-${col}`}>
-                <div className="absolute top-0 w-0 h-[5mm] border-l border-slate-400 z-20" style={{ left: `calc(5mm + ${col * 200}mm)` }} />
-                <div className="absolute bottom-0 w-0 h-[5mm] border-l border-slate-400 z-20" style={{ left: `calc(5mm + ${col * 200}mm)` }} />
-              </React.Fragment>
-            ))
-          ) : (
-            Array.from({ length: gridCols + 1 }).map((_, col) => (
+          {verticalMarkPositions.map((col) => {
+            const left = mode === 'business-card'
+              ? `calc(15mm + ${col * 90}mm)`
+              : mode === 'coupon'
+                ? `calc(5mm + ${col * 200}mm)`
+                : `calc(5mm + ${col * (200/gridCols)}mm)`;
+            return (
               <React.Fragment key={`v-${col}`}>
-                <div className="absolute top-0 w-0 h-[5mm] border-l border-slate-400 z-20" style={{ left: `calc(5mm + ${col * (200/gridCols)}mm)` }} />
-                <div className="absolute bottom-0 w-0 h-[5mm] border-l border-slate-400 z-20" style={{ left: `calc(5mm + ${col * (200/gridCols)}mm)` }} />
+                <div className="absolute top-0 w-0 h-[5mm] border-l border-slate-400 z-20" style={{ left }} />
+                <div className="absolute bottom-0 w-0 h-[5mm] border-l border-slate-400 z-20" style={{ left }} />
               </React.Fragment>
-            ))
-          )}
+            );
+          })}
           {/* Horizontal Marks */}
-          {mode === 'business-card' ? (
-            [0, 1, 2, 3, 4, 5].map((row) => (
-              <React.Fragment key={`h-bc-${row}`}>
-                <div className="absolute left-0 h-0 w-[4mm] border-t border-slate-400 z-20" style={{ top: `calc(13.5mm + ${row * 54}mm)` }} />
-                <div className="absolute right-0 h-0 w-[4mm] border-t border-slate-400 z-20" style={{ top: `calc(13.5mm + ${row * 54}mm)` }} />
-              </React.Fragment>
-            ))
-          ) : mode === 'coupon' ? (
-            [0, 1, 2, 3, 4, 5, 6].map((row) => (
-              <React.Fragment key={`h-coupon-${row}`}>
-                <div className="absolute left-0 h-0 w-[4mm] border-t border-slate-400 z-20" style={{ top: `calc(5mm + ${row * 47.8}mm)` }} />
-                <div className="absolute right-0 h-0 w-[4mm] border-t border-slate-400 z-20" style={{ top: `calc(5mm + ${row * 47.8}mm)` }} />
-              </React.Fragment>
-            ))
-          ) : (
-            Array.from({ length: gridRows + 1 }).map((_, row) => (
+          {horizontalMarkPositions.map((row) => {
+            const top = mode === 'business-card'
+              ? `calc(13.5mm + ${row * 54}mm)`
+              : mode === 'coupon'
+                ? `calc(5mm + ${row * 47.8}mm)`
+                : `calc(8.5mm + ${row * (275/gridRows)}mm)`;
+            return (
               <React.Fragment key={`h-${row}`}>
-                <div className="absolute left-0 h-0 w-[4mm] border-t border-slate-400 z-20" style={{ top: `calc(8.5mm + ${row * (275/gridRows)}mm)` }} />
-                <div className="absolute right-0 h-0 w-[4mm] border-t border-slate-400 z-20" style={{ top: `calc(8.5mm + ${row * (275/gridRows)}mm)` }} />
+                <div className="absolute left-0 h-0 w-[4mm] border-t border-slate-400 z-20" style={{ top }} />
+                <div className="absolute right-0 h-0 w-[4mm] border-t border-slate-400 z-20" style={{ top }} />
               </React.Fragment>
-            ))
-          )}
+            );
+          })}
 
           {/* Grid */}
           <div 
@@ -934,7 +969,7 @@ export default function App() {
               return (
                 <div 
                   key={slotNum} 
-                  className="relative border border-dashed border-slate-300 box-border bg-white overflow-hidden" 
+                  className={`relative box-border bg-white overflow-hidden ${shouldPrint ? 'border border-dashed border-slate-300' : 'border border-transparent'}`}
                   style={mode === 'business-card' ? { width: '90mm', height: '54mm' } : mode === 'coupon' ? { width: '200mm', height: '47.8mm' } : { width: `${200/gridCols}mm`, height: `${275/gridRows}mm` }}
                 >
                   {shouldPrint ? (
@@ -1007,9 +1042,9 @@ export default function App() {
                           <div className="flex flex-col mt-[1.5mm] space-y-[0.8mm] w-full">
                             {filmSpecs.filter(s => s.visible !== false && s.value && s.value.trim() !== '' && s.value.trim() !== '00').map((spec, i) => (
                               <div key={i} className="flex items-baseline w-full">
-                                <span className="text-[7px] font-medium leading-[1] text-black whitespace-nowrap tracking-tight">{spec.label}</span>
+                                <span className="text-[8px] font-medium leading-[1] text-black whitespace-nowrap tracking-tight">{spec.label}</span>
                                 <div className="flex-grow border-b border-dotted border-slate-500 mx-1 mb-[1.5px]"></div>
-                                <span className="text-[7px] leading-[1] font-medium text-black whitespace-nowrap">
+                                <span className="text-[8px] leading-[1] font-medium text-black whitespace-nowrap">
                                   {spec.value}{specSuffix(spec)}
                                 </span>
                               </div>
@@ -1019,11 +1054,7 @@ export default function App() {
                       )}
                       </div>
                     </div>
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <span className="text-slate-200 text-sm print:hidden">{slotNum}</span>
-                    </div>
-                  )}
+                  ) : null}
                 </div>
               );
             })}
