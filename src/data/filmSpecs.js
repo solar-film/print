@@ -1,10 +1,12 @@
 // Keep source headings (including capitalization) and column order for display.
 export function filmFromRow(row) {
-  const film = { brand: '', series: '', model: '', specs: {} };
-  for (const [heading, rawValue] of Object.entries(row)) {
+  const film = { brand: '', series: '', model: '', warranty: '', specs: {} };
+  for (const [index, [heading, rawValue]] of Object.entries(row).entries()) {
     const value = String(rawValue ?? '').trim();
     const field = heading.trim().toLowerCase();
-    if (['brand', 'series', 'model'].includes(field)) {
+    if (index === 9) {
+      film.warranty = value;
+    } else if (['brand', 'series', 'model'].includes(field)) {
       film[field] = value;
     } else if (heading.trim() && value) {
       film.specs[heading] = value;
@@ -15,7 +17,11 @@ export function filmFromRow(row) {
 
 export function displaySpecs(specs = {}) {
   return Object.entries(specs)
-    .filter(([, value]) => String(value ?? '').trim() && String(value).trim() !== '00')
+    .filter(([label, value]) => (
+      !/warranty|รับประกัน/i.test(label)
+      && String(value ?? '').trim()
+      && String(value).trim() !== '00'
+    ))
     .map(([label, value]) => ({ label, value: String(value).trim() }));
 }
 
@@ -35,5 +41,5 @@ export function hasFilmIdentity(film) {
 }
 
 export function filmLabel(film) {
-  return [film.brand, film.series, film.model].filter(value => String(value ?? "").trim()).join(" - ");
+  return [film.brand, film.model].filter(value => String(value ?? "").trim()).join(" - ");
 }
