@@ -69,6 +69,7 @@ export default function DatabaseManager({ isOpen, onClose, database, setDatabase
     }
     const existingSpecs = editIndex !== null ? database[editIndex].specs || {} : {};
     const itemData = {
+      ...(editIndex !== null ? database[editIndex] : {}),
       brand: newBrand.trim(),
       series: newSeries.trim(),
       model: newModel.trim(),

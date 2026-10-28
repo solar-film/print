@@ -116,18 +116,33 @@ export default function App() {
 
   // Database State
   const [customDatabase, setCustomDatabase] = useState(() => {
-    const saved = localStorage.getItem('filmDatabase');
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      const version = localStorage.getItem('dbVersion');
-      if (version !== 'v8') {
-        localStorage.setItem('dbVersion', 'v8');
-        return filmDatabase; // Force migrate to include specs
+    try {
+      const saved = localStorage.getItem('filmDatabase');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        const version = localStorage.getItem('dbVersion');
+        const edited = localStorage.getItem('filmDatabaseEdited') === 'true';
+        if (Array.isArray(parsed) && (version === 'v8' || edited)) return parsed;
       }
-      return parsed;
+    } catch (error) {
+      console.error('Cannot load saved film database:', error);
     }
     return filmDatabase;
   });
+  const [databaseEdited] = useState(() => {
+    try {
+      return localStorage.getItem('filmDatabaseEdited') === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const hasLocalDatabaseChanges = useRef(databaseEdited);
+  const databaseRevision = useRef(0);
+  const updateDatabase = (update) => {
+    hasLocalDatabaseChanges.current = true;
+    databaseRevision.current += 1;
+    setCustomDatabase(update);
+  };
   const [isDbManagerOpen, setIsDbManagerOpen] = useState(false);
   const [isFilmListPage, setIsFilmListPage] = useState(() => window.location.hash === '#film-specs');
 
@@ -179,6 +194,8 @@ export default function App() {
   const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTKDKVr3RKTRAp3KauC7AYBEcVq4coI9gss_O5iXyIr3mk8M1SA1KNkKy56J40J0xU-lyc3Tbs8HExa/pub?output=csv';
 
   const syncFromGoogleSheets = async (silent = false) => {
+    if (silent && hasLocalDatabaseChanges.current) return;
+    const revision = databaseRevision.current;
     try {
       const res = await fetch(CSV_URL);
       if (!res.ok) throw new Error('Cannot fetch');
@@ -191,6 +208,8 @@ export default function App() {
             const newData = results.data.map(filmFromRow).filter(hasFilmIdentity);
             
             if (newData.length > 0) {
+               // A response started before a local edit must not replace that edit.
+               if (databaseRevision.current !== revision || (silent && hasLocalDatabaseChanges.current)) return;
                setCustomDatabase(newData);
                if (!silent) notify(`อัปเดตข้อมูลล่าสุดแล้ว (${newData.length} รายการ)`, { type: 'success', title: 'ซิงค์ข้อมูลสำเร็จ' });
             } else if (!silent) {
@@ -228,8 +247,15 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('filmDatabase', JSON.stringify(customDatabase));
-  }, [customDatabase]);
+    try {
+      localStorage.setItem('filmDatabase', JSON.stringify(customDatabase));
+      localStorage.setItem('dbVersion', 'v8');
+      localStorage.setItem('filmDatabaseEdited', String(hasLocalDatabaseChanges.current));
+    } catch (error) {
+      console.error('Cannot save film database:', error);
+      notify('ไม่สามารถบันทึกข้อมูลในอุปกรณ์นี้ได้ ข้อมูลที่เปลี่ยนจะใช้ได้เฉพาะระหว่างเปิดหน้านี้ กรุณาตรวจสอบพื้นที่จัดเก็บและการตั้งค่าเบราว์เซอร์', { type: 'error', title: 'บันทึกข้อมูลไม่สำเร็จ' });
+    }
+  }, [customDatabase, notify]);
 
   useEffect(() => {
     const handleHashChange = () => setIsFilmListPage(window.location.hash === '#film-specs');
@@ -318,10 +344,8 @@ export default function App() {
     return (
       <FilmSpecTable
         database={customDatabase}
-        onBack={() => {
-          if (window.history.length > 1) window.history.back();
-          else window.location.hash = '';
-        }}
+        setDatabase={updateDatabase}
+        onBack={() => { window.location.hash = ''; }}
       />
     );
   }
@@ -1069,7 +1093,7 @@ export default function App() {
         isOpen={isDbManagerOpen} 
         onClose={() => setIsDbManagerOpen(false)} 
         database={customDatabase} 
-        setDatabase={setCustomDatabase} 
+        setDatabase={updateDatabase}
       />
     </div>
   );
