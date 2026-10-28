@@ -8,6 +8,7 @@ import { filmFromRow, displaySpecs, specSuffix, hasFilmIdentity, filmLabel } fro
 import DatabaseManager from './components/DatabaseManager';
 import FilmSpecTable from './components/FilmSpecTable';
 import { useDialog } from './components/dialogContext';
+import { useFilmEditAccess } from './components/filmEditAccessContext';
 import couponDefaultImage from './assets/templates/coupon.png';
 
 // Load all images from the templates directory automatically
@@ -63,6 +64,7 @@ function matchingWarrantyBadge(film) {
 
 export default function App() {
   const { notify } = useDialog();
+  const { isUnlocked: isFilmEditUnlocked, canEdit: canEditFilmDatabase } = useFilmEditAccess();
   const [mode, setMode] = useState('film'); // 'general' | 'film'
 
   // General Mode State
@@ -139,9 +141,11 @@ export default function App() {
   const hasLocalDatabaseChanges = useRef(databaseEdited);
   const databaseRevision = useRef(0);
   const updateDatabase = (update) => {
+    if (!canEditFilmDatabase()) return false;
     hasLocalDatabaseChanges.current = true;
     databaseRevision.current += 1;
     setCustomDatabase(update);
+    return true;
   };
   const [isDbManagerOpen, setIsDbManagerOpen] = useState(false);
   const [isFilmListPage, setIsFilmListPage] = useState(() => window.location.hash === '#film-specs');
@@ -1090,7 +1094,7 @@ export default function App() {
 
       {/* Database Manager Modal */}
       <DatabaseManager 
-        isOpen={isDbManagerOpen} 
+        isOpen={isDbManagerOpen && isFilmEditUnlocked}
         onClose={() => setIsDbManagerOpen(false)} 
         database={customDatabase} 
         setDatabase={updateDatabase}
