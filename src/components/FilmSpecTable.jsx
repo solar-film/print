@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react';
-import { ArrowLeft, Check, Database, LockKeyhole, Pencil, Plus, Search, Trash2, UnlockKeyhole } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { ArrowLeft, Check, Database, LockKeyhole, Maximize, Minimize, Pencil, Plus, Search, Trash2, UnlockKeyhole } from 'lucide-react';
 import { specSuffix } from '../data/filmSpecs';
 import FilmEditor from './FilmEditor';
 import { useDialog } from './dialogContext';
@@ -60,11 +60,33 @@ function specRank(label) {
 }
 
 export default function FilmSpecTable({ database, setDatabase, onBack }) {
-  const { confirm } = useDialog();
+  const { confirm, notify } = useDialog();
   const { isUnlocked, canEdit, requestAccess, lock } = useFilmEditAccess();
   const [search, setSearch] = useState('');
   const [editor, setEditor] = useState(null);
   const [status, setStatus] = useState('');
+  const [fullscreenAvailable, setFullscreenAvailable] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    setFullscreenAvailable(Boolean(document.fullscreenEnabled));
+    const handleFullscreenChange = () => setIsFullscreen(Boolean(document.fullscreenElement));
+    handleFullscreenChange();
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      if (document.fullscreenElement === document.documentElement) document.exitFullscreen().catch(() => {});
+    };
+  }, []);
+
+  const toggleFullscreen = async () => {
+    try {
+      if (document.fullscreenElement) await document.exitFullscreen();
+      else await document.documentElement.requestFullscreen();
+    } catch {
+      notify('เบราว์เซอร์ไม่สามารถเปิดโหมดเต็มจอได้ในขณะนี้ กรุณาลองอีกครั้ง', { type: 'warning' });
+    }
+  };
 
   const specColumns = useMemo(() => {
     const labels = new Map();
@@ -136,9 +158,9 @@ export default function FilmSpecTable({ database, setDatabase, onBack }) {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-800 print:bg-white">
-      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 shadow-sm backdrop-blur print:static print:shadow-none">
-        <div className="mx-auto flex max-w-[1600px] items-center gap-3 px-4 py-4 sm:px-6 lg:px-8">
+    <div className="flex h-dvh w-full flex-col overflow-hidden bg-slate-100 text-slate-800 print:block print:h-auto print:overflow-visible print:bg-white">
+      <header className="z-30 shrink-0 border-b border-slate-200 bg-white/95 shadow-sm backdrop-blur print:static print:shadow-none">
+        <div className="flex w-full items-center gap-3 px-3 py-2 sm:px-4">
           <button
             type="button"
             onClick={onBack}
@@ -151,11 +173,17 @@ export default function FilmSpecTable({ database, setDatabase, onBack }) {
             <h1 className="truncate text-lg font-bold text-slate-900 sm:text-xl">รายการและสเปคฟิล์ม</h1>
             <p className="mt-0.5 text-sm text-slate-500">ข้อมูลทั้งหมด {database.length.toLocaleString('th-TH')} รายการ</p>
           </div>
+          {fullscreenAvailable && (
+            <button type="button" onClick={toggleFullscreen} aria-label={isFullscreen ? 'ออกจากเต็มจอ' : 'แสดงเต็มจอ'} aria-pressed={isFullscreen} className="flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-2 focus-visible:outline-blue-600 print:hidden">
+              {isFullscreen ? <Minimize size={18} /> : <Maximize size={18} />}
+              <span className="hidden sm:inline">{isFullscreen ? 'ออกจากเต็มจอ' : 'เต็มจอ'}</span>
+            </button>
+          )}
         </div>
       </header>
 
-      <main className="mx-auto max-w-[1600px] p-4 sm:p-6 lg:p-8">
-        <div className="mb-4 flex flex-col gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between print:hidden">
+      <main className="flex min-h-0 w-full flex-1 flex-col gap-2 p-2 sm:p-3 print:block print:p-0">
+        <div className="flex shrink-0 flex-col gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 sm:flex-row sm:items-center sm:justify-between print:hidden">
           <p className={`flex items-center gap-2 text-sm font-medium ${isUnlocked ? 'text-emerald-700' : 'text-slate-600'}`}>
             {isUnlocked ? <UnlockKeyhole size={18} className="shrink-0" /> : <LockKeyhole size={18} className="shrink-0" />}
             {isUnlocked ? 'ปลดล็อกการแก้ไขข้อมูลแล้ว' : 'โหมดดูข้อมูล — ใส่รหัสผ่านเพื่อเพิ่ม แก้ไข หรือลบ'}
@@ -165,12 +193,12 @@ export default function FilmSpecTable({ database, setDatabase, onBack }) {
             {isUnlocked ? 'ล็อกการแก้ไข' : 'ปลดล็อกเพื่อแก้ไข'}
           </button>
         </div>
-        <p className="mb-3 text-xs leading-5 text-slate-500 print:hidden">ข้อมูลที่เพิ่มหรือแก้ไขจะบันทึกไว้ในอุปกรณ์นี้ และใช้ร่วมกับหน้าเลือกฟิล์มสำหรับพิมพ์</p>
-        <div role="status" aria-live="polite" className="print:hidden">
-          {status && <p className="mb-3 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"><Check size={18} className="shrink-0" />{status}</p>}
+        <p className="shrink-0 text-xs leading-5 text-slate-500 print:hidden">ข้อมูลที่เพิ่มหรือแก้ไขจะบันทึกไว้ในอุปกรณ์นี้ และใช้ร่วมกับหน้าเลือกฟิล์มสำหรับพิมพ์</p>
+        <div role="status" aria-live="polite" className="shrink-0 empty:hidden print:hidden">
+          {status && <p className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"><Check size={18} className="shrink-0" />{status}</p>}
         </div>
-        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <div className="flex flex-col gap-3 border-b border-slate-200 bg-white p-4 lg:flex-row lg:items-center lg:justify-between">
+        <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm print:block print:overflow-visible">
+          <div className="flex shrink-0 flex-col gap-3 border-b border-slate-200 bg-white p-3 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <h2 className="flex items-center text-base font-semibold text-slate-900">
                 <Database size={18} className="mr-2 text-blue-600" /> ตารางสเปคฟิล์ม
@@ -193,15 +221,15 @@ export default function FilmSpecTable({ database, setDatabase, onBack }) {
             </div>
           </div>
 
-          <div className="max-h-[calc(100dvh-320px)] overflow-auto print:max-h-none print:overflow-visible">
-            <table className="min-w-max w-full border-separate border-spacing-0 text-left text-sm">
+          <div className="min-h-0 flex-1 overflow-auto print:overflow-visible">
+            <table className="w-full min-w-[1100px] border-separate border-spacing-0 text-left text-sm">
               <thead className="sticky top-0 z-20 bg-slate-800 text-white print:static">
                 <tr>
-                  <th scope="col" className="sticky left-0 z-30 min-w-36 border-b border-r border-slate-700 bg-slate-800 px-3 py-3 text-center font-semibold print:hidden">จัดการ</th>
-                  <th className="min-w-40 border-b border-r border-slate-700 bg-slate-800 px-4 py-3 text-center font-semibold">ปีรับประกัน</th>
-                  <th className="min-w-32 border-b border-r border-slate-700 px-4 py-3 font-semibold">ยี่ห้อ</th>
-                  <th className="min-w-48 border-b border-r border-slate-700 px-4 py-3 font-semibold">ซีรีส์</th>
-                  <th className="min-w-44 border-b border-r border-slate-700 px-4 py-3 font-semibold">รุ่น</th>
+                  <th scope="col" className="sticky left-0 z-30 w-32 min-w-32 border-b border-r border-slate-700 bg-slate-800 px-2 py-3 text-center font-semibold print:hidden">จัดการ</th>
+                  <th className="w-24 min-w-24 border-b border-r border-slate-700 bg-slate-800 px-3 py-3 text-center font-semibold">ปีรับประกัน</th>
+                  <th className="min-w-28 border-b border-r border-slate-700 px-3 py-3 font-semibold">ยี่ห้อ</th>
+                  <th className="min-w-40 border-b border-r border-slate-700 px-3 py-3 font-semibold">ซีรีส์</th>
+                  <th className="min-w-24 border-b border-r border-slate-700 px-3 py-3 font-semibold">รุ่น</th>
                   {specColumns.map((column) => (
                     <th key={column.key} className="max-w-64 border-b border-r border-slate-700 px-4 py-3 text-center font-semibold last:border-r-0">
                       {column.label}
@@ -217,7 +245,7 @@ export default function FilmSpecTable({ database, setDatabase, onBack }) {
 
                   return (
                     <tr key={`${film.brand}-${film.series}-${film.model}-${index}`} className="group odd:bg-white even:bg-slate-50/70 hover:bg-blue-50">
-                      <td className="sticky left-0 z-10 border-b border-r border-slate-200 bg-white px-3 py-2 group-hover:bg-blue-50 print:hidden">
+                      <td className="sticky left-0 z-10 border-b border-r border-slate-200 bg-white px-2 py-2 group-hover:bg-blue-50 print:hidden">
                         <div className="flex items-center justify-center gap-1">
                           <button type="button" onClick={() => requestAccess(() => openEditor(film))} aria-label={`แก้ไข ${film.brand} ${film.series} ${film.model}`} className="flex min-h-9 items-center gap-1 rounded-lg px-2 py-2 text-xs font-semibold text-blue-700 transition hover:bg-blue-100 focus-visible:outline-2 focus-visible:outline-blue-600"><Pencil size={15} /> แก้ไข</button>
                           <button type="button" onClick={() => requestAccess(() => handleDelete(film))} aria-label={`ลบ ${film.brand} ${film.series} ${film.model}`} className="flex min-h-9 items-center gap-1 rounded-lg px-2 py-2 text-xs font-semibold text-rose-600 transition hover:bg-rose-100 focus-visible:outline-2 focus-visible:outline-rose-600"><Trash2 size={15} /> ลบ</button>
