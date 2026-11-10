@@ -9,14 +9,15 @@ import DatabaseManager from './components/DatabaseManager';
 import FilmSpecTable from './components/FilmSpecTable';
 import { useDialog } from './components/dialogContext';
 import { useFilmEditAccess } from './components/filmEditAccessContext';
+import { filmPrintRanges, readFilmPrintPreferences, saveFilmPrintPreference } from './data/filmPrintPreferences';
 import couponDefaultImage from './assets/templates/coupon.png';
 import gfsWatermarkImage from './assets/company-watermarks/gfs.png';
 import mhlWatermarkImage from './assets/company-watermarks/mhl.png';
 
 const companyWatermarks = [
-  { name: 'ไม่ใช้', image: null },
-  { name: 'GFS', image: gfsWatermarkImage },
-  { name: 'MHL', image: mhlWatermarkImage },
+  { id: 'none', name: 'ไม่ใช้', image: null },
+  { id: 'gfs', name: 'GFS', image: gfsWatermarkImage },
+  { id: 'mhl', name: 'MHL', image: mhlWatermarkImage },
 ];
 
 // Load all images from the templates directory automatically
@@ -104,11 +105,13 @@ export default function App() {
   
   const [filmLogo1, setFilmLogo1] = useState(null);
   const [filmLogo2, setFilmLogo2] = useState(null);
-  const [filmBrandLogoSize, setFilmBrandLogoSize] = useState(100);
-  const [filmWarrantyLogoSize, setFilmWarrantyLogoSize] = useState(100);
-  const [filmWatermark, setFilmWatermark] = useState(companyWatermarks[0]);
-  const [filmWatermarkSize, setFilmWatermarkSize] = useState(70);
-  const [filmWatermarkOpacity, setFilmWatermarkOpacity] = useState(12);
+  const [filmPrintPreferences, setFilmPrintPreferences] = useState(readFilmPrintPreferences);
+  const { brandLogoSize: filmBrandLogoSize, warrantyLogoSize: filmWarrantyLogoSize, watermark: watermarkId } = filmPrintPreferences;
+  const filmWatermark = companyWatermarks.find((watermark) => watermark.id === watermarkId);
+  const watermarkSizePreference = `${watermarkId}Size`;
+  const watermarkOpacityPreference = `${watermarkId}Opacity`;
+  const filmWatermarkSize = filmPrintPreferences[watermarkSizePreference];
+  const filmWatermarkOpacity = filmPrintPreferences[watermarkOpacityPreference];
   const [showFilmSettings, setShowFilmSettings] = useState(false);
 
   // Business Card State
@@ -309,6 +312,11 @@ export default function App() {
   }, [isFilmListPage, mode, startPos, quantity, filmSeries, filmModel, filmSeriesSize, filmModelSize, filmSpecSize, filmSpecs]);
 
   // Handlers
+  const updateFilmPrintPreference = (name, value) => {
+    setFilmPrintPreferences((preferences) => ({ ...preferences, [name]: value }));
+    saveFilmPrintPreference(name, value);
+  };
+
   const handleImageUpload = (e, setter) => {
     const file = e.target.files[0];
     if (file) {
@@ -656,20 +664,20 @@ export default function App() {
               <fieldset className="space-y-3 rounded-xl border border-slate-200 bg-white px-3 pb-3">
                 <legend className="px-1 text-sm font-semibold text-slate-800">ขนาดโลโก้บนสติกเกอร์</legend>
                 {[
-                  { id: 'film-brand-logo-size', label: 'โลโก้แบรนด์ (ซ้าย)', value: filmBrandLogoSize, setSize: setFilmBrandLogoSize },
-                  { id: 'film-warranty-logo-size', label: 'ตรารับประกัน (ขวา)', value: filmWarrantyLogoSize, setSize: setFilmWarrantyLogoSize },
-                ].map(({ id, label, value, setSize }) => (
+                  { id: 'film-brand-logo-size', label: 'โลโก้แบรนด์ (ซ้าย)', name: 'brandLogoSize' },
+                  { id: 'film-warranty-logo-size', label: 'ตรารับประกัน (ขวา)', name: 'warrantyLogoSize' },
+                ].map(({ id, label, name }) => (
                   <div key={id} className="grid grid-cols-[minmax(0,1fr)_4rem] items-center gap-x-3 gap-y-1">
                     <label htmlFor={id} className="text-xs font-medium text-slate-700">{label}</label>
-                    <output htmlFor={id} className="row-span-2 text-right text-xs font-semibold tabular-nums text-slate-600">{value}%</output>
+                    <output htmlFor={id} className="row-span-2 text-right text-xs font-semibold tabular-nums text-slate-600">{filmPrintPreferences[name]}%</output>
                     <input
                       id={id}
                       type="range"
-                      min="50"
-                      max="150"
-                      step="5"
-                      value={value}
-                      onChange={(event) => setSize(Number(event.target.value))}
+                      min={filmPrintRanges[name].min}
+                      max={filmPrintRanges[name].max}
+                      step={filmPrintRanges[name].step}
+                      value={filmPrintPreferences[name]}
+                      onChange={(event) => updateFilmPrintPreference(name, event.target.valueAsNumber)}
                       className="w-full accent-blue-600"
                     />
                   </div>
@@ -687,9 +695,9 @@ export default function App() {
                 <div className="grid grid-cols-3 gap-2">
                   {companyWatermarks.map((watermark) => (
                     <button
-                      key={watermark.name}
+                      key={watermark.id}
                       type="button"
-                      onClick={() => setFilmWatermark(watermark)}
+                      onClick={() => updateFilmPrintPreference('watermark', watermark.id)}
                       aria-pressed={filmWatermark === watermark}
                       className={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-lg border px-2 py-1.5 text-xs font-semibold transition focus-visible:outline-2 focus-visible:outline-blue-600 ${filmWatermark === watermark ? 'border-blue-500 bg-blue-50 text-blue-800' : 'border-slate-200 bg-white text-slate-600 hover:border-blue-300'}`}
                     >
@@ -699,20 +707,20 @@ export default function App() {
                   ))}
                 </div>
                 {filmWatermark.image && [
-                  { id: 'film-watermark-size', label: 'ขนาดลายน้ำ', min: 20, step: 5, value: filmWatermarkSize, setValue: setFilmWatermarkSize },
-                  { id: 'film-watermark-opacity', label: 'ความเข้มลายน้ำ', min: 0, step: 1, value: filmWatermarkOpacity, setValue: setFilmWatermarkOpacity },
-                ].map(({ id, label, min, step, value, setValue }) => (
+                  { id: 'film-watermark-size', label: 'ขนาดลายน้ำ', name: watermarkSizePreference },
+                  { id: 'film-watermark-opacity', label: 'ความเข้มลายน้ำ', name: watermarkOpacityPreference },
+                ].map(({ id, label, name }) => (
                   <div key={id} className="grid grid-cols-[minmax(0,1fr)_4rem] items-center gap-x-3 gap-y-1">
                     <label htmlFor={id} className="text-xs font-medium text-slate-700">{label}</label>
-                    <output htmlFor={id} className="row-span-2 text-right text-xs font-semibold tabular-nums text-slate-600">{value}%</output>
+                    <output htmlFor={id} className="row-span-2 text-right text-xs font-semibold tabular-nums text-slate-600">{filmPrintPreferences[name]}%</output>
                     <input
                       id={id}
                       type="range"
-                      min={min}
-                      max="100"
-                      step={step}
-                      value={value}
-                      onChange={(event) => setValue(Number(event.target.value))}
+                      min={filmPrintRanges[name].min}
+                      max={filmPrintRanges[name].max}
+                      step={filmPrintRanges[name].step}
+                      value={filmPrintPreferences[name]}
+                      onChange={(event) => updateFilmPrintPreference(name, event.target.valueAsNumber)}
                       className="w-full accent-blue-600"
                     />
                   </div>
