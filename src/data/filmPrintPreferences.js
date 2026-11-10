@@ -2,6 +2,8 @@ const storagePrefix = 'filmPrint.';
 const logoSize = { min: 50, max: 150, step: 5, defaultValue: 100 };
 const watermarkSize = { min: 20, max: 100, step: 5, defaultValue: 70 };
 const watermarkOpacity = { min: 0, max: 100, step: 1, defaultValue: 12 };
+const verticalPadding = { min: 0, step: 0.5, defaultValue: 1.5 };
+const horizontalPadding = { ...verticalPadding, defaultValue: 2 };
 
 export const filmPrintRanges = {
   seriesSize: { min: 6, max: 24, step: 0.5, defaultValue: 10 },
@@ -13,6 +15,14 @@ export const filmPrintRanges = {
   gfsOpacity: watermarkOpacity,
   mhlSize: watermarkSize,
   mhlOpacity: watermarkOpacity,
+  quantity: { min: 1, max: 1200, step: 1, defaultValue: 32 },
+  startPos: { min: 1, max: 200, step: 1, defaultValue: 1 },
+  gridCols: { min: 1, max: 10, step: 1, defaultValue: 4 },
+  gridRows: { min: 1, max: 20, step: 1, defaultValue: 8 },
+  piecePaddingTop: verticalPadding,
+  piecePaddingBottom: verticalPadding,
+  piecePaddingLeft: horizontalPadding,
+  piecePaddingRight: horizontalPadding,
 };
 
 export function readFilmPrintPreferences() {
@@ -30,7 +40,7 @@ export function readFilmPrintPreferences() {
       if (!saved?.trim()) continue;
 
       const value = Number(saved);
-      if (value >= min && value <= max && (value - min) % step === 0) {
+      if (Number.isFinite(value) && value >= min && value <= (max ?? Infinity) && (value - min) % step === 0) {
         preferences[name] = value;
       }
     }

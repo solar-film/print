@@ -110,7 +110,18 @@ export default function App() {
     brandLogoSize: filmBrandLogoSize,
     warrantyLogoSize: filmWarrantyLogoSize,
     watermark: watermarkId,
+    quantity,
+    startPos: savedStartPos,
+    gridCols,
+    gridRows,
+    piecePaddingTop,
+    piecePaddingBottom,
+    piecePaddingLeft,
+    piecePaddingRight,
   } = filmPrintPreferences;
+  const [printLayoutDraft, setPrintLayoutDraft] = useState(null);
+  const totalSlots = mode === 'business-card' ? 10 : mode === 'coupon' ? 6 : gridCols * gridRows;
+  const startPos = Math.min(savedStartPos, totalSlots);
   const filmWatermark = companyWatermarks.find((watermark) => watermark.id === watermarkId);
   const watermarkSizePreference = `${watermarkId}Size`;
   const watermarkOpacityPreference = `${watermarkId}Opacity`;
@@ -170,15 +181,6 @@ export default function App() {
   };
   const [isDbManagerOpen, setIsDbManagerOpen] = useState(false);
   const [isFilmListPage, setIsFilmListPage] = useState(() => window.location.hash === '#film-specs');
-
-  // Grid Settings
-  const [gridCols, setGridCols] = useState(4);
-  const [gridRows, setGridRows] = useState(8);
-
-  const [piecePaddingTop, setPiecePaddingTop] = useState(1.5);
-  const [piecePaddingBottom, setPiecePaddingBottom] = useState(1.5);
-  const [piecePaddingLeft, setPiecePaddingLeft] = useState(2);
-  const [piecePaddingRight, setPiecePaddingRight] = useState(2);
 
   // PWA Install Prompt State
   const [deferredPrompt, setDeferredPrompt] = useState(null);
@@ -288,10 +290,6 @@ export default function App() {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
-  // Common Layout State
-  const [quantity, setQuantity] = useState(32);
-  const [startPos, setStartPos] = useState(1);
-  
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const printAreaRef = useRef(null);
   const filmPrintPreviewRef = useRef(null);
@@ -378,7 +376,23 @@ export default function App() {
     }
   };
 
-  const totalSlots = mode === 'business-card' ? 10 : mode === 'coupon' ? 6 : gridCols * gridRows;
+  const printLayoutInput = (name, { max = filmPrintRanges[name].max, value = filmPrintPreferences[name], multiplier = 1 } = {}) => ({
+    id: `print-layout-${name}`,
+    type: 'number',
+    min: filmPrintRanges[name].min,
+    max,
+    step: filmPrintRanges[name].step,
+    value: printLayoutDraft?.name === name ? printLayoutDraft.value : value,
+    onChange: ({ currentTarget }) => {
+      const { value, valueAsNumber, validity } = currentTarget;
+      setPrintLayoutDraft({ name, value });
+      if (validity.valid && Number.isFinite(valueAsNumber)) {
+        updateFilmPrintPreference(name, valueAsNumber * multiplier);
+      }
+    },
+    onBlur: () => setPrintLayoutDraft(null),
+  });
+
   const slots = Array.from({ length: totalSlots }, (_, i) => i + 1);
   const totalItemsNeeded = (startPos - 1) + quantity;
   const totalPages = Math.ceil(totalItemsNeeded / totalSlots);
@@ -975,16 +989,23 @@ export default function App() {
             <div className="mt-4 space-y-4">
               <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1 flex items-center">
+                <label htmlFor="print-layout-quantity" className="block text-sm font-medium text-slate-700 mb-1 flex items-center">
                   <Hash size={14} className="mr-1 text-slate-400" /> {mode === 'coupon' ? 'จำนวนแผ่น (แผ่นละ 6 ใบ)' : 'จำนวนดวง'}
                 </label>
-                <input type="number" min="1" max={mode === 'coupon' ? undefined : totalSlots} value={mode === 'coupon' ? Math.ceil(quantity / 6) : quantity} onChange={(e) => setQuantity(mode === 'coupon' ? Number(e.target.value) * 6 : Number(e.target.value))} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                <input
+                  {...printLayoutInput('quantity', mode === 'coupon' ? {
+                    max: filmPrintRanges.quantity.max / 6,
+                    value: Math.ceil(quantity / 6),
+                    multiplier: 6,
+                  } : undefined)}
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1 flex items-center" title="เริ่มพิมพ์จากช่องที่ N">
+                <label htmlFor="print-layout-startPos" className="block text-sm font-medium text-slate-700 mb-1 flex items-center" title="เริ่มพิมพ์จากช่องที่ N">
                   <ArrowRight size={14} className="mr-1 text-slate-400" /> เริ่มตำแหน่งที่
                 </label>
-                <input type="number" min="1" max={totalSlots} value={startPos} onChange={(e) => setStartPos(Number(e.target.value))} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                <input {...printLayoutInput('startPos', { max: totalSlots, value: startPos })} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
               </div>
               </div>
             
@@ -992,32 +1013,32 @@ export default function App() {
                 <>
                   <div className="grid grid-cols-2 gap-4 mt-2">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">จำนวนคอลัมน์ (แนวนอน)</label>
-                    <input type="number" min="1" max="10" value={gridCols} onChange={(e) => setGridCols(Number(e.target.value))} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                    <label htmlFor="print-layout-gridCols" className="block text-sm font-medium text-slate-700 mb-1">จำนวนคอลัมน์ (แนวนอน)</label>
+                    <input {...printLayoutInput('gridCols')} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">จำนวนแถว (แนวตั้ง)</label>
-                    <input type="number" min="1" max="20" value={gridRows} onChange={(e) => setGridRows(Number(e.target.value))} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                    <label htmlFor="print-layout-gridRows" className="block text-sm font-medium text-slate-700 mb-1">จำนวนแถว (แนวตั้ง)</label>
+                    <input {...printLayoutInput('gridRows')} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
                   </div>
                   </div>
                   <div className="pt-2 border-t border-slate-100 mt-3">
                   <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">ระยะขอบแต่ละดวง (Padding)</label>
                   <div className="grid grid-cols-4 gap-2">
                     <div>
-                      <label className="block text-[10px] text-slate-500 mb-1 text-center">บน (Top)</label>
-                      <input type="number" step="0.5" min="0" value={piecePaddingTop} onChange={(e) => setPiecePaddingTop(Number(e.target.value))} className="w-full px-2 py-1.5 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 outline-none text-xs text-center font-medium" />
+                      <label htmlFor="print-layout-piecePaddingTop" className="block text-[10px] text-slate-500 mb-1 text-center">บน (Top)</label>
+                      <input {...printLayoutInput('piecePaddingTop')} className="w-full px-2 py-1.5 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 outline-none text-xs text-center font-medium" />
                     </div>
                     <div>
-                      <label className="block text-[10px] text-slate-500 mb-1 text-center">ล่าง (Bottom)</label>
-                      <input type="number" step="0.5" min="0" value={piecePaddingBottom} onChange={(e) => setPiecePaddingBottom(Number(e.target.value))} className="w-full px-2 py-1.5 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 outline-none text-xs text-center font-medium" />
+                      <label htmlFor="print-layout-piecePaddingBottom" className="block text-[10px] text-slate-500 mb-1 text-center">ล่าง (Bottom)</label>
+                      <input {...printLayoutInput('piecePaddingBottom')} className="w-full px-2 py-1.5 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 outline-none text-xs text-center font-medium" />
                     </div>
                     <div>
-                      <label className="block text-[10px] text-slate-500 mb-1 text-center">ซ้าย (Left)</label>
-                      <input type="number" step="0.5" min="0" value={piecePaddingLeft} onChange={(e) => setPiecePaddingLeft(Number(e.target.value))} className="w-full px-2 py-1.5 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 outline-none text-xs text-center font-medium" />
+                      <label htmlFor="print-layout-piecePaddingLeft" className="block text-[10px] text-slate-500 mb-1 text-center">ซ้าย (Left)</label>
+                      <input {...printLayoutInput('piecePaddingLeft')} className="w-full px-2 py-1.5 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 outline-none text-xs text-center font-medium" />
                     </div>
                     <div>
-                      <label className="block text-[10px] text-slate-500 mb-1 text-center">ขวา (Right)</label>
-                      <input type="number" step="0.5" min="0" value={piecePaddingRight} onChange={(e) => setPiecePaddingRight(Number(e.target.value))} className="w-full px-2 py-1.5 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 outline-none text-xs text-center font-medium" />
+                      <label htmlFor="print-layout-piecePaddingRight" className="block text-[10px] text-slate-500 mb-1 text-center">ขวา (Right)</label>
+                      <input {...printLayoutInput('piecePaddingRight')} className="w-full px-2 py-1.5 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 outline-none text-xs text-center font-medium" />
                     </div>
                   </div>
                   </div>
