@@ -10,6 +10,14 @@ import FilmSpecTable from './components/FilmSpecTable';
 import { useDialog } from './components/dialogContext';
 import { useFilmEditAccess } from './components/filmEditAccessContext';
 import couponDefaultImage from './assets/templates/coupon.png';
+import gfsWatermarkImage from './assets/company-watermarks/gfs.png';
+import mhlWatermarkImage from './assets/company-watermarks/mhl.png';
+
+const companyWatermarks = [
+  { name: 'ไม่ใช้', image: null },
+  { name: 'GFS', image: gfsWatermarkImage },
+  { name: 'MHL', image: mhlWatermarkImage },
+];
 
 // Load all images from the templates directory automatically
 const templateFiles = import.meta.glob('./assets/templates/*.{png,jpg,jpeg,svg,webp,PNG,JPG,JPEG}', { eager: true, import: 'default' });
@@ -96,6 +104,8 @@ export default function App() {
   
   const [filmLogo1, setFilmLogo1] = useState(null);
   const [filmLogo2, setFilmLogo2] = useState(null);
+  const [filmWatermark, setFilmWatermark] = useState(companyWatermarks[0]);
+  const [filmWatermarkSize, setFilmWatermarkSize] = useState(70);
   const [showFilmSettings, setShowFilmSettings] = useState(false);
 
   // Business Card State
@@ -645,6 +655,40 @@ export default function App() {
                 )}
               </fieldset>
 
+              <fieldset className="space-y-3 rounded-xl border border-slate-200 bg-white px-3 pb-3">
+                <legend className="px-1 text-sm font-semibold text-slate-800">ลายน้ำโลโก้บริษัท</legend>
+                <div className="grid grid-cols-3 gap-2">
+                  {companyWatermarks.map((watermark) => (
+                    <button
+                      key={watermark.name}
+                      type="button"
+                      onClick={() => setFilmWatermark(watermark)}
+                      aria-pressed={filmWatermark === watermark}
+                      className={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-lg border px-2 py-1.5 text-xs font-semibold transition focus-visible:outline-2 focus-visible:outline-blue-600 ${filmWatermark === watermark ? 'border-blue-500 bg-blue-50 text-blue-800' : 'border-slate-200 bg-white text-slate-600 hover:border-blue-300'}`}
+                    >
+                      {watermark.image && <img src={watermark.image} alt="" className="h-5 w-full object-contain" />}
+                      {watermark.name}
+                    </button>
+                  ))}
+                </div>
+                {filmWatermark.image && (
+                  <div className="grid grid-cols-[minmax(0,1fr)_4rem] items-center gap-x-3 gap-y-1">
+                    <label htmlFor="film-watermark-size" className="text-xs font-medium text-slate-700">ขนาดลายน้ำ</label>
+                    <output htmlFor="film-watermark-size" className="row-span-2 text-right text-xs font-semibold tabular-nums text-slate-600">{filmWatermarkSize}%</output>
+                    <input
+                      id="film-watermark-size"
+                      type="range"
+                      min="20"
+                      max="100"
+                      step="5"
+                      value={filmWatermarkSize}
+                      onChange={(event) => setFilmWatermarkSize(Number(event.target.value))}
+                      className="w-full accent-blue-600"
+                    />
+                  </div>
+                )}
+              </fieldset>
+
               <button
                 type="button"
                 onClick={() => setShowFilmSettings((isOpen) => !isOpen)}
@@ -1084,8 +1128,18 @@ export default function App() {
                           className="w-full h-full flex flex-col justify-start box-border font-sans bg-white text-black z-10 relative"
                           style={{ paddingTop: `${piecePaddingTop}mm`, paddingBottom: `${piecePaddingBottom}mm`, paddingLeft: `${piecePaddingLeft}mm`, paddingRight: `${piecePaddingRight}mm` }}
                         >
+                          {filmWatermark.image && (
+                            <img
+                              src={filmWatermark.image}
+                              alt=""
+                              draggable={false}
+                              className="pointer-events-none absolute top-1/2 left-1/2 z-0 max-h-[85%] -translate-x-1/2 -translate-y-1/2 object-contain opacity-[0.12]"
+                              style={{ width: `${filmWatermarkSize}%` }}
+                            />
+                          )}
+
                           {/* Top Header Logos */}
-                          <div className="flex justify-between items-start">
+                          <div className="relative z-10 flex justify-between items-start">
                             {/* Main Logo Container */}
                             <div className="flex items-start justify-start">
                               {filmLogo1 ? (
@@ -1101,14 +1155,14 @@ export default function App() {
                           </div>
 
                           {/* Film Series Title */}
-                          <div className="flex items-baseline w-full">
+                          <div className="relative z-10 flex items-baseline w-full">
                             <span style={{ fontSize: `${filmSeriesSize}px` }} className="font-bold leading-tight text-black whitespace-nowrap tracking-tight">{filmSeries}</span>
                             <div className="flex-grow border-b border-dotted border-slate-600 mx-1 mb-[2px]"></div>
                             <span style={{ fontSize: `${filmModelSize}px` }} className="font-bold leading-tight text-black whitespace-nowrap">{filmModel}</span>
                           </div>
 
                           {/* Spec Rows */}
-                          <div className="flex flex-col mt-[1.5mm] w-full" style={{ fontSize: `${filmSpecSize}px`, rowGap: filmSpecSize > 8 ? '0.4mm' : '0.8mm' }}>
+                          <div className="relative z-10 flex flex-col mt-[1.5mm] w-full" style={{ fontSize: `${filmSpecSize}px`, rowGap: filmSpecSize > 8 ? '0.4mm' : '0.8mm' }}>
                             {filmSpecs.filter(s => s.visible !== false && s.value && s.value.trim() !== '' && s.value.trim() !== '00').map((spec, i) => (
                               <div key={i} className="flex items-baseline w-full">
                                 <span className="min-w-0 break-words font-medium leading-none text-black tracking-tight">{spec.label}</span>
