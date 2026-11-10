@@ -5,6 +5,15 @@ import FilmEditor from './FilmEditor';
 import { useDialog } from './dialogContext';
 import { useFilmEditAccess } from './filmEditAccessContext';
 
+const tableFontSizes = [
+  { size: 14, label: 'ปกติ' },
+  { size: 12, label: 'เล็ก' },
+  { size: 11, label: 'เล็กมาก' },
+];
+
+const tableFontSizeKey = 'print:film-spec-table-font-size';
+const defaultTableFontSize = tableFontSizes[0].size;
+
 const defaultSpecLabels = [
   'Solar Heat Gain Coefficient (SHGC)',
   'Nominal Thickness',
@@ -67,6 +76,25 @@ export default function FilmSpecTable({ database, setDatabase, onBack }) {
   const [status, setStatus] = useState('');
   const [fullscreenAvailable, setFullscreenAvailable] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [tableFontSize, setTableFontSize] = useState(() => {
+    try {
+      const savedSize = Number(window.localStorage.getItem(tableFontSizeKey));
+      return tableFontSizes.find(({ size }) => size === savedSize)?.size ?? defaultTableFontSize;
+    } catch {
+      return defaultTableFontSize;
+    }
+  });
+  const compactTable = tableFontSize < defaultTableFontSize;
+
+  const changeTableFontSize = (event) => {
+    const size = Number(event.target.value);
+    setTableFontSize(size);
+    try {
+      window.localStorage.setItem(tableFontSizeKey, String(size));
+    } catch {
+      // The selected size still applies for the current view.
+    }
+  };
 
   useEffect(() => {
     setFullscreenAvailable(Boolean(document.fullscreenEnabled));
@@ -217,21 +245,32 @@ export default function FilmSpecTable({ database, setDatabase, onBack }) {
                   className="w-full rounded-xl border border-slate-300 bg-slate-50 py-2.5 pl-10 pr-4 text-base outline-none transition focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100"
                 />
               </label>
-              <button type="button" onClick={() => requestAccess(() => openEditor())} className="flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"><Plus size={18} /> เพิ่มข้อมูลฟิล์ม</button>
+              <div className="flex flex-wrap items-center gap-2">
+                <label className="flex items-center gap-2 rounded-xl border border-slate-300 bg-slate-50 px-3 text-sm font-medium text-slate-700">
+                  <span>ขนาดตัวอักษร</span>
+                  <select value={tableFontSize} onChange={changeTableFontSize} className="min-h-11 rounded-lg bg-transparent py-2 pr-1 font-semibold focus-visible:outline-2 focus-visible:outline-blue-600">
+                    {tableFontSizes.map(({ size, label }) => <option key={size} value={size}>{label}</option>)}
+                  </select>
+                </label>
+                <button type="button" onClick={() => requestAccess(() => openEditor())} className="flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"><Plus size={18} /> เพิ่มข้อมูลฟิล์ม</button>
+              </div>
             </div>
           </div>
 
           <div className="min-h-0 flex-1 overflow-auto print:overflow-visible">
-            <table className="w-full min-w-[1100px] border-separate border-spacing-0 text-left text-sm">
+            <table
+              className={`w-full min-w-[1100px] border-separate border-spacing-0 text-left leading-[1.45] ${compactTable ? '[&_th]:py-2 [&_td:not(:first-child)]:py-2' : '[&_th]:py-3 [&_td:not(:first-child)]:py-3'}`}
+              style={{ fontSize: `${tableFontSize / 16}rem` }}
+            >
               <thead className="sticky top-0 z-20 bg-slate-800 text-white print:static">
                 <tr>
-                  <th scope="col" className="sticky left-0 z-30 w-32 min-w-32 border-b border-r border-slate-700 bg-slate-800 px-2 py-3 text-center font-semibold print:hidden">จัดการ</th>
-                  <th className="w-24 min-w-24 border-b border-r border-slate-700 bg-slate-800 px-3 py-3 text-center font-semibold">ปีรับประกัน</th>
-                  <th className="min-w-28 border-b border-r border-slate-700 px-3 py-3 font-semibold">ยี่ห้อ</th>
-                  <th className="min-w-40 border-b border-r border-slate-700 px-3 py-3 font-semibold">ซีรีส์</th>
-                  <th className="min-w-24 border-b border-r border-slate-700 px-3 py-3 font-semibold">รุ่น</th>
+                  <th scope="col" className="sticky left-0 z-30 w-32 min-w-32 border-b border-r border-slate-700 bg-slate-800 px-2 text-center font-semibold print:hidden">จัดการ</th>
+                  <th className="w-24 min-w-24 border-b border-r border-slate-700 bg-slate-800 px-3 text-center font-semibold">ปีรับประกัน</th>
+                  <th className="min-w-28 border-b border-r border-slate-700 px-3 font-semibold">ยี่ห้อ</th>
+                  <th className="min-w-40 border-b border-r border-slate-700 px-3 font-semibold">ซีรีส์</th>
+                  <th className="min-w-24 border-b border-r border-slate-700 px-3 font-semibold">รุ่น</th>
                   {specColumns.map((column) => (
-                    <th key={column.key} className="max-w-64 border-b border-r border-slate-700 px-4 py-3 text-center font-semibold last:border-r-0">
+                    <th key={column.key} className="max-w-64 border-b border-r border-slate-700 px-4 text-center font-semibold last:border-r-0">
                       {column.label}
                     </th>
                   ))}
@@ -245,20 +284,20 @@ export default function FilmSpecTable({ database, setDatabase, onBack }) {
 
                   return (
                     <tr key={`${film.brand}-${film.series}-${film.model}-${index}`} className="group odd:bg-white even:bg-slate-50/70 hover:bg-blue-50">
-                      <td className="sticky left-0 z-10 border-b border-r border-slate-200 bg-white px-2 py-2 group-hover:bg-blue-50 print:hidden">
+                      <td className={`sticky left-0 z-10 border-b border-r border-slate-200 bg-white px-2 group-hover:bg-blue-50 print:hidden ${compactTable ? 'py-0.5' : 'py-2'}`}>
                         <div className="flex items-center justify-center gap-1">
                           <button type="button" onClick={() => requestAccess(() => openEditor(film))} aria-label={`แก้ไข ${film.brand} ${film.series} ${film.model}`} className="flex min-h-9 items-center gap-1 rounded-lg px-2 py-2 text-xs font-semibold text-blue-700 transition hover:bg-blue-100 focus-visible:outline-2 focus-visible:outline-blue-600"><Pencil size={15} /> แก้ไข</button>
                           <button type="button" onClick={() => requestAccess(() => handleDelete(film))} aria-label={`ลบ ${film.brand} ${film.series} ${film.model}`} className="flex min-h-9 items-center gap-1 rounded-lg px-2 py-2 text-xs font-semibold text-rose-600 transition hover:bg-rose-100 focus-visible:outline-2 focus-visible:outline-rose-600"><Trash2 size={15} /> ลบ</button>
                         </div>
                       </td>
-                      <td className="border-b border-r border-slate-200 px-4 py-3 text-center font-semibold text-blue-700">{displayWarranty(film)}</td>
-                      <td className="border-b border-r border-slate-200 px-4 py-3 font-semibold text-slate-900">{film.brand || '-'}</td>
-                      <td className="border-b border-r border-slate-200 px-4 py-3 text-slate-700">{film.series || '-'}</td>
-                      <td className="border-b border-r border-slate-200 px-4 py-3 font-medium text-slate-800">{film.model || '-'}</td>
+                      <td className="border-b border-r border-slate-200 px-4 text-center font-semibold text-blue-700">{displayWarranty(film)}</td>
+                      <td className="border-b border-r border-slate-200 px-4 font-semibold text-slate-900">{film.brand || '-'}</td>
+                      <td className="border-b border-r border-slate-200 px-4 text-slate-700">{film.series || '-'}</td>
+                      <td className="border-b border-r border-slate-200 px-4 font-medium text-slate-800">{film.model || '-'}</td>
                       {specColumns.map((column) => {
                         const value = String(specsByKey[column.key] ?? '').trim();
                         return (
-                          <td key={column.key} className="border-b border-r border-slate-200 px-4 py-3 text-center tabular-nums text-slate-700 last:border-r-0">
+                          <td key={column.key} className="border-b border-r border-slate-200 px-4 text-center tabular-nums text-slate-700 last:border-r-0">
                             {value && value !== '00' ? `${value}${specSuffix({ label: column.label, value })}` : '-'}
                           </td>
                         );
