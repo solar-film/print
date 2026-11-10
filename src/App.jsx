@@ -87,10 +87,7 @@ export default function App() {
   // Film Mode State
   const [filmBrand, setFilmBrand] = useState('');
   const [filmSeries, setFilmSeries] = useState('');
-  const [filmSeriesSize, setFilmSeriesSize] = useState(10);
   const [filmModel, setFilmModel] = useState('');
-  const [filmModelSize, setFilmModelSize] = useState(12);
-  const [filmSpecSize, setFilmSpecSize] = useState(8);
   const [filmSpecs, setFilmSpecs] = useState([
     { label: 'Solar Heat Gain Coefficient (SHGC)', value: '' },
     { label: 'Nominal Thickness', value: '' },
@@ -106,7 +103,14 @@ export default function App() {
   const [filmLogo1, setFilmLogo1] = useState(null);
   const [filmLogo2, setFilmLogo2] = useState(null);
   const [filmPrintPreferences, setFilmPrintPreferences] = useState(readFilmPrintPreferences);
-  const { brandLogoSize: filmBrandLogoSize, warrantyLogoSize: filmWarrantyLogoSize, watermark: watermarkId } = filmPrintPreferences;
+  const {
+    seriesSize: filmSeriesSize,
+    modelSize: filmModelSize,
+    specSize: filmSpecSize,
+    brandLogoSize: filmBrandLogoSize,
+    warrantyLogoSize: filmWarrantyLogoSize,
+    watermark: watermarkId,
+  } = filmPrintPreferences;
   const filmWatermark = companyWatermarks.find((watermark) => watermark.id === watermarkId);
   const watermarkSizePreference = `${watermarkId}Size`;
   const watermarkOpacityPreference = `${watermarkId}Opacity`;
@@ -640,21 +644,21 @@ export default function App() {
               <fieldset className="space-y-3 rounded-xl border border-slate-200 bg-white px-3 pb-3">
                 <legend className="px-1 text-sm font-semibold text-slate-800">ขนาดตัวอักษรบนสติกเกอร์</legend>
                 {[
-                  { id: 'film-series-size', label: 'ชื่อซีรีส์', value: filmSeriesSize, max: 24, setSize: setFilmSeriesSize },
-                  { id: 'film-model-size', label: 'ชื่อรุ่น', value: filmModelSize, max: 24, setSize: setFilmModelSize },
-                  { id: 'film-spec-size', label: 'หัวข้อและค่าสเปค', value: filmSpecSize, max: 12, setSize: setFilmSpecSize },
-                ].map(({ id, label, value, max, setSize }) => (
+                  { id: 'film-series-size', label: 'ชื่อซีรีส์', name: 'seriesSize' },
+                  { id: 'film-model-size', label: 'ชื่อรุ่น', name: 'modelSize' },
+                  { id: 'film-spec-size', label: 'หัวข้อและค่าสเปค', name: 'specSize' },
+                ].map(({ id, label, name }) => (
                   <div key={id} className="grid grid-cols-[minmax(0,1fr)_4rem] items-center gap-x-3 gap-y-1">
                     <label htmlFor={id} className="text-xs font-medium text-slate-700">{label}</label>
-                    <output htmlFor={id} className="row-span-2 text-right text-xs font-semibold tabular-nums text-slate-600">{value} px</output>
+                    <output htmlFor={id} className="row-span-2 text-right text-xs font-semibold tabular-nums text-slate-600">{filmPrintPreferences[name]} px</output>
                     <input
                       id={id}
                       type="range"
-                      min="6"
-                      max={max}
-                      step="0.5"
-                      value={value}
-                      onChange={(event) => setSize(Number(event.target.value))}
+                      min={filmPrintRanges[name].min}
+                      max={filmPrintRanges[name].max}
+                      step={filmPrintRanges[name].step}
+                      value={filmPrintPreferences[name]}
+                      onChange={(event) => updateFilmPrintPreference(name, event.target.valueAsNumber)}
                       className="w-full accent-blue-600"
                     />
                   </div>

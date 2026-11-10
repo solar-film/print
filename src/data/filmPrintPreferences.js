@@ -4,6 +4,9 @@ const watermarkSize = { min: 20, max: 100, step: 5, defaultValue: 70 };
 const watermarkOpacity = { min: 0, max: 100, step: 1, defaultValue: 12 };
 
 export const filmPrintRanges = {
+  seriesSize: { min: 6, max: 24, step: 0.5, defaultValue: 10 },
+  modelSize: { min: 6, max: 24, step: 0.5, defaultValue: 12 },
+  specSize: { min: 6, max: 12, step: 0.5, defaultValue: 8 },
   brandLogoSize: logoSize,
   warrantyLogoSize: logoSize,
   gfsSize: watermarkSize,
