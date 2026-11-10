@@ -81,6 +81,7 @@ export default function App() {
   const [filmSeriesSize, setFilmSeriesSize] = useState(10);
   const [filmModel, setFilmModel] = useState('');
   const [filmModelSize, setFilmModelSize] = useState(12);
+  const [filmSpecSize, setFilmSpecSize] = useState(8);
   const [filmSpecs, setFilmSpecs] = useState([
     { label: 'Solar Heat Gain Coefficient (SHGC)', value: '' },
     { label: 'Nominal Thickness', value: '' },
@@ -273,6 +274,26 @@ export default function App() {
   
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const printAreaRef = useRef(null);
+  const filmPrintPreviewRef = useRef(null);
+  const [filmPrintOverflows, setFilmPrintOverflows] = useState(false);
+
+  useEffect(() => {
+    const preview = filmPrintPreviewRef.current;
+    if (!preview) {
+      setFilmPrintOverflows(false);
+      return;
+    }
+
+    const checkFit = () => {
+      setFilmPrintOverflows(preview.scrollHeight > preview.clientHeight || preview.scrollWidth > preview.clientWidth);
+    };
+    checkFit();
+
+    const observer = new ResizeObserver(checkFit);
+    observer.observe(preview);
+    for (const block of preview.children) observer.observe(block);
+    return () => observer.disconnect();
+  }, [isFilmListPage, mode, startPos, quantity, filmSeries, filmModel, filmSeriesSize, filmModelSize, filmSpecSize, filmSpecs]);
 
   // Handlers
   const handleImageUpload = (e, setter) => {
@@ -587,23 +608,42 @@ export default function App() {
                   <div className="space-y-2">
                     <label className="block text-xs font-medium text-slate-700">ชื่อซีรีส์ (ซ้าย)</label>
                     <input type="text" value={filmSeries} onChange={(e) => setFilmSeries(e.target.value)} className="w-full px-3 py-1.5 text-sm border border-slate-300 rounded focus:ring-2 focus:ring-slate-800 outline-none" />
-                    <div className="flex items-center space-x-1">
-                      <span className="text-[10px] text-slate-500">ขนาด:</span>
-                      <input type="range" min="6" max="24" step="0.5" value={filmSeriesSize} onChange={(e) => setFilmSeriesSize(Number(e.target.value))} className="w-full accent-slate-600" />
-                      <span className="text-[10px] text-slate-500 w-6 text-right">{filmSeriesSize}</span>
-                    </div>
                   </div>
                   <div className="space-y-2">
                     <label className="block text-xs font-medium text-slate-700">รุ่น (ขวา)</label>
                     <input type="text" value={filmModel} onChange={(e) => setFilmModel(e.target.value)} className="w-full px-3 py-1.5 text-sm border border-slate-300 rounded focus:ring-2 focus:ring-slate-800 outline-none" />
-                    <div className="flex items-center space-x-1">
-                      <span className="text-[10px] text-slate-500">ขนาด:</span>
-                      <input type="range" min="6" max="24" step="0.5" value={filmModelSize} onChange={(e) => setFilmModelSize(Number(e.target.value))} className="w-full accent-slate-600" />
-                      <span className="text-[10px] text-slate-500 w-6 text-right">{filmModelSize}</span>
-                    </div>
                   </div>
                 </div>
               </div>
+
+              <fieldset className="space-y-3 rounded-xl border border-slate-200 bg-white px-3 pb-3">
+                <legend className="px-1 text-sm font-semibold text-slate-800">ขนาดตัวอักษรบนสติกเกอร์</legend>
+                {[
+                  { id: 'film-series-size', label: 'ชื่อซีรีส์', value: filmSeriesSize, max: 24, setSize: setFilmSeriesSize },
+                  { id: 'film-model-size', label: 'ชื่อรุ่น', value: filmModelSize, max: 24, setSize: setFilmModelSize },
+                  { id: 'film-spec-size', label: 'หัวข้อและค่าสเปค', value: filmSpecSize, max: 12, setSize: setFilmSpecSize },
+                ].map(({ id, label, value, max, setSize }) => (
+                  <div key={id} className="grid grid-cols-[minmax(0,1fr)_4rem] items-center gap-x-3 gap-y-1">
+                    <label htmlFor={id} className="text-xs font-medium text-slate-700">{label}</label>
+                    <output htmlFor={id} className="row-span-2 text-right text-xs font-semibold tabular-nums text-slate-600">{value} px</output>
+                    <input
+                      id={id}
+                      type="range"
+                      min="6"
+                      max={max}
+                      step="0.5"
+                      value={value}
+                      onChange={(event) => setSize(Number(event.target.value))}
+                      className="w-full accent-blue-600"
+                    />
+                  </div>
+                ))}
+                {filmPrintOverflows && (
+                  <p role="status" className="rounded-lg bg-amber-50 px-2.5 py-2 text-xs leading-snug text-amber-900">
+                    ข้อความล้นขอบสติกเกอร์ ลองลดขนาดตัวอักษรหรือลดจำนวนแถวหรือคอลัมน์ก่อนพิมพ์
+                  </p>
+                )}
+              </fieldset>
 
               <button
                 type="button"
@@ -1040,6 +1080,7 @@ export default function App() {
 
                       {mode === 'film' && (
                         <div 
+                          ref={slotNum === Math.max(1, Math.ceil(startPos)) ? filmPrintPreviewRef : null}
                           className="w-full h-full flex flex-col justify-start box-border font-sans bg-white text-black z-10 relative"
                           style={{ paddingTop: `${piecePaddingTop}mm`, paddingBottom: `${piecePaddingBottom}mm`, paddingLeft: `${piecePaddingLeft}mm`, paddingRight: `${piecePaddingRight}mm` }}
                         >
@@ -1067,12 +1108,12 @@ export default function App() {
                           </div>
 
                           {/* Spec Rows */}
-                          <div className="flex flex-col mt-[1.5mm] space-y-[0.8mm] w-full">
+                          <div className="flex flex-col mt-[1.5mm] w-full" style={{ fontSize: `${filmSpecSize}px`, rowGap: filmSpecSize > 8 ? '0.4mm' : '0.8mm' }}>
                             {filmSpecs.filter(s => s.visible !== false && s.value && s.value.trim() !== '' && s.value.trim() !== '00').map((spec, i) => (
                               <div key={i} className="flex items-baseline w-full">
-                                <span className="text-[8px] font-medium leading-[1] text-black whitespace-nowrap tracking-tight">{spec.label}</span>
+                                <span className="min-w-0 break-words font-medium leading-none text-black tracking-tight">{spec.label}</span>
                                 <div className="flex-grow border-b border-dotted border-slate-500 mx-1 mb-[1.5px]"></div>
-                                <span className="text-[8px] leading-[1] font-medium text-black whitespace-nowrap">
+                                <span className="shrink-0 leading-none font-medium text-black whitespace-nowrap">
                                   {spec.value}{specSuffix(spec)}
                                 </span>
                               </div>
