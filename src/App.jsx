@@ -104,8 +104,11 @@ export default function App() {
   
   const [filmLogo1, setFilmLogo1] = useState(null);
   const [filmLogo2, setFilmLogo2] = useState(null);
+  const [filmBrandLogoSize, setFilmBrandLogoSize] = useState(100);
+  const [filmWarrantyLogoSize, setFilmWarrantyLogoSize] = useState(100);
   const [filmWatermark, setFilmWatermark] = useState(companyWatermarks[0]);
   const [filmWatermarkSize, setFilmWatermarkSize] = useState(70);
+  const [filmWatermarkOpacity, setFilmWatermarkOpacity] = useState(12);
   const [showFilmSettings, setShowFilmSettings] = useState(false);
 
   // Business Card State
@@ -648,12 +651,36 @@ export default function App() {
                     />
                   </div>
                 ))}
-                {filmPrintOverflows && (
-                  <p role="status" className="rounded-lg bg-amber-50 px-2.5 py-2 text-xs leading-snug text-amber-900">
-                    ข้อความล้นขอบสติกเกอร์ ลองลดขนาดตัวอักษรหรือลดจำนวนแถวหรือคอลัมน์ก่อนพิมพ์
-                  </p>
-                )}
               </fieldset>
+
+              <fieldset className="space-y-3 rounded-xl border border-slate-200 bg-white px-3 pb-3">
+                <legend className="px-1 text-sm font-semibold text-slate-800">ขนาดโลโก้บนสติกเกอร์</legend>
+                {[
+                  { id: 'film-brand-logo-size', label: 'โลโก้แบรนด์ (ซ้าย)', value: filmBrandLogoSize, setSize: setFilmBrandLogoSize },
+                  { id: 'film-warranty-logo-size', label: 'ตรารับประกัน (ขวา)', value: filmWarrantyLogoSize, setSize: setFilmWarrantyLogoSize },
+                ].map(({ id, label, value, setSize }) => (
+                  <div key={id} className="grid grid-cols-[minmax(0,1fr)_4rem] items-center gap-x-3 gap-y-1">
+                    <label htmlFor={id} className="text-xs font-medium text-slate-700">{label}</label>
+                    <output htmlFor={id} className="row-span-2 text-right text-xs font-semibold tabular-nums text-slate-600">{value}%</output>
+                    <input
+                      id={id}
+                      type="range"
+                      min="50"
+                      max="150"
+                      step="5"
+                      value={value}
+                      onChange={(event) => setSize(Number(event.target.value))}
+                      className="w-full accent-blue-600"
+                    />
+                  </div>
+                ))}
+              </fieldset>
+
+              {filmPrintOverflows && (
+                <p role="status" className="rounded-lg bg-amber-50 px-2.5 py-2 text-xs leading-snug text-amber-900">
+                  เนื้อหาล้นขอบสติกเกอร์ ลองลดขนาดโลโก้หรือตัวอักษร หรือปรับจำนวนแถวและคอลัมน์ก่อนพิมพ์
+                </p>
+              )}
 
               <fieldset className="space-y-3 rounded-xl border border-slate-200 bg-white px-3 pb-3">
                 <legend className="px-1 text-sm font-semibold text-slate-800">ลายน้ำโลโก้บริษัท</legend>
@@ -671,22 +698,25 @@ export default function App() {
                     </button>
                   ))}
                 </div>
-                {filmWatermark.image && (
-                  <div className="grid grid-cols-[minmax(0,1fr)_4rem] items-center gap-x-3 gap-y-1">
-                    <label htmlFor="film-watermark-size" className="text-xs font-medium text-slate-700">ขนาดลายน้ำ</label>
-                    <output htmlFor="film-watermark-size" className="row-span-2 text-right text-xs font-semibold tabular-nums text-slate-600">{filmWatermarkSize}%</output>
+                {filmWatermark.image && [
+                  { id: 'film-watermark-size', label: 'ขนาดลายน้ำ', min: 20, step: 5, value: filmWatermarkSize, setValue: setFilmWatermarkSize },
+                  { id: 'film-watermark-opacity', label: 'ความเข้มลายน้ำ', min: 0, step: 1, value: filmWatermarkOpacity, setValue: setFilmWatermarkOpacity },
+                ].map(({ id, label, min, step, value, setValue }) => (
+                  <div key={id} className="grid grid-cols-[minmax(0,1fr)_4rem] items-center gap-x-3 gap-y-1">
+                    <label htmlFor={id} className="text-xs font-medium text-slate-700">{label}</label>
+                    <output htmlFor={id} className="row-span-2 text-right text-xs font-semibold tabular-nums text-slate-600">{value}%</output>
                     <input
-                      id="film-watermark-size"
+                      id={id}
                       type="range"
-                      min="20"
+                      min={min}
                       max="100"
-                      step="5"
-                      value={filmWatermarkSize}
-                      onChange={(event) => setFilmWatermarkSize(Number(event.target.value))}
+                      step={step}
+                      value={value}
+                      onChange={(event) => setValue(Number(event.target.value))}
                       className="w-full accent-blue-600"
                     />
                   </div>
-                )}
+                ))}
               </fieldset>
 
               <button
@@ -1133,24 +1163,24 @@ export default function App() {
                               src={filmWatermark.image}
                               alt=""
                               draggable={false}
-                              className="pointer-events-none absolute top-1/2 left-1/2 z-0 max-h-[85%] -translate-x-1/2 -translate-y-1/2 object-contain opacity-[0.12]"
-                              style={{ width: `${filmWatermarkSize}%` }}
+                              className="pointer-events-none absolute top-1/2 left-1/2 z-0 max-h-[85%] -translate-x-1/2 -translate-y-1/2 object-contain"
+                              style={{ width: `${filmWatermarkSize}%`, opacity: filmWatermarkOpacity / 100 }}
                             />
                           )}
 
                           {/* Top Header Logos */}
                           <div className="relative z-10 flex justify-between items-start">
                             {/* Main Logo Container */}
-                            <div className="flex items-start justify-start">
-                              {filmLogo1 ? (
-                                <img src={filmLogo1} className="max-h-[12.5mm] max-w-[32mm] object-contain object-left-top" alt="Logo" />
-                              ) : null}
+                            <div className="flex max-w-[75%] items-start justify-start" style={{ width: `${32 * filmBrandLogoSize / 100}mm` }}>
+                              {filmLogo1 && (
+                                <img src={filmLogo1} className="max-w-full object-contain object-left-top" style={{ maxHeight: `${12.5 * filmBrandLogoSize / 100}mm` }} alt="Logo" />
+                              )}
                             </div>
                             {/* Warranty Badge Container */}
-                            <div className="flex items-start justify-end">
-                              {filmLogo2 ? (
-                                <img src={filmLogo2} className="max-h-[8mm] max-w-[9mm] object-contain object-right-top" alt="Warranty" />
-                              ) : null}
+                            <div className="flex max-w-[25%] items-start justify-end" style={{ width: `${9 * filmWarrantyLogoSize / 100}mm` }}>
+                              {filmLogo2 && (
+                                <img src={filmLogo2} className="max-w-full object-contain object-right-top" style={{ maxHeight: `${8 * filmWarrantyLogoSize / 100}mm` }} alt="Warranty" />
+                              )}
                             </div>
                           </div>
 
