@@ -1,4 +1,6 @@
-export const filmDatabase = [
+import { withCatalogAdditions } from './catalogAdditions.js';
+
+export const filmDatabase = withCatalogAdditions([
   {
     "brand": "NANOTECH",
     "series": "PRO MAX",
@@ -761,4 +763,4 @@ export const filmDatabase = [
     "series": "Safety & Security",
     "model": "SAS50"
   }
-];
+]);

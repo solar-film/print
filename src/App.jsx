@@ -4,6 +4,7 @@ import Papa from 'papaparse';
 import { toPng } from 'html-to-image';
 import { jsPDF } from 'jspdf';
 import { filmDatabase } from './data/filmDatabase';
+import { withCatalogAdditions, catalogAdditionsVersion, catalogAdditionsStorageKey } from './data/catalogAdditions';
 import { filmFromRow, displaySpecs, specSuffix, hasFilmIdentity, filmLabel } from './data/filmSpecs';
 import DatabaseManager from './components/DatabaseManager';
 import FilmSpecTable from './components/FilmSpecTable';
@@ -156,7 +157,12 @@ export default function App() {
         const parsed = JSON.parse(saved);
         const version = localStorage.getItem('dbVersion');
         const edited = localStorage.getItem('filmDatabaseEdited') === 'true';
-        if (Array.isArray(parsed) && (version === 'v8' || edited)) return parsed;
+        if (Array.isArray(parsed) && (version === 'v8' || edited)) {
+          // Apply new catalog entries once, preserving subsequent local edits/deletions.
+          return localStorage.getItem(catalogAdditionsStorageKey) === catalogAdditionsVersion
+            ? parsed
+            : withCatalogAdditions(parsed);
+        }
       }
     } catch (error) {
       console.error('Cannot load saved film database:', error);
@@ -237,8 +243,9 @@ export default function App() {
             if (newData.length > 0) {
                // A response started before a local edit must not replace that edit.
                if (databaseRevision.current !== revision || (silent && hasLocalDatabaseChanges.current)) return;
-               setCustomDatabase(newData);
-               if (!silent) notify(`อัปเดตข้อมูลล่าสุดแล้ว (${newData.length} รายการ)`, { type: 'success', title: 'ซิงค์ข้อมูลสำเร็จ' });
+               const mergedData = withCatalogAdditions(newData);
+               setCustomDatabase(mergedData);
+               if (!silent) notify(`อัปเดตข้อมูลล่าสุดแล้ว (${mergedData.length} รายการ)`, { type: 'success', title: 'ซิงค์ข้อมูลสำเร็จ' });
             } else if (!silent) {
                notify('ไม่พบข้อมูลรุ่นฟิล์ม กรุณาตรวจสอบข้อมูลใน Google Sheets', { type: 'warning' });
             }
@@ -276,6 +283,7 @@ export default function App() {
   useEffect(() => {
     try {
       localStorage.setItem('filmDatabase', JSON.stringify(customDatabase));
+      localStorage.setItem(catalogAdditionsStorageKey, catalogAdditionsVersion);
       localStorage.setItem('dbVersion', 'v8');
       localStorage.setItem('filmDatabaseEdited', String(hasLocalDatabaseChanges.current));
     } catch (error) {
