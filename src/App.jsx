@@ -12,17 +12,17 @@ import { useDialog } from './components/dialogContext';
 import { useFilmEditAccess } from './components/filmEditAccessContext';
 import { filmPrintRanges, readFilmPrintPreferences, saveFilmPrintPreference } from './data/filmPrintPreferences';
 import couponDefaultImage from './assets/templates/coupon.png';
-import gfsWatermarkImage from './assets/company-watermarks/gfs.png';
-import mhlWatermarkImage from './assets/company-watermarks/mhl.png';
-import borneoWatermarkImage from './assets/company-watermarks/borneo.png';
-import designSquareWatermarkImage from './assets/company-watermarks/design-square.png';
+import gfsCompanyLogoImage from './assets/company-watermarks/gfs.png';
+import mhlCompanyLogoImage from './assets/company-watermarks/mhl.png';
+import borneoCompanyLogoImage from './assets/company-watermarks/borneo.png';
+import designSquareCompanyLogoImage from './assets/company-watermarks/design-square.png';
 
-const companyWatermarks = [
+const companyLogos = [
   { id: 'none', name: 'ไม่ใช้', image: null },
-  { id: 'gfs', name: 'GFS', image: gfsWatermarkImage },
-  { id: 'mhl', name: 'MHL', image: mhlWatermarkImage },
-  { id: 'borneo', name: 'Borneo', image: borneoWatermarkImage },
-  { id: 'designSquare', name: 'Design Square', image: designSquareWatermarkImage },
+  { id: 'gfs', name: 'GFS', image: gfsCompanyLogoImage, aspectRatio: 3103 / 1297 },
+  { id: 'mhl', name: 'MHL', image: mhlCompanyLogoImage, aspectRatio: 300 / 128 },
+  { id: 'borneo', name: 'Borneo', image: borneoCompanyLogoImage, aspectRatio: 496 / 212 },
+  { id: 'designSquare', name: 'Design Square', image: designSquareCompanyLogoImage, aspectRatio: 722 / 202 },
 ];
 
 // Load all images from the templates directory automatically
@@ -114,7 +114,7 @@ export default function App() {
     specSize: filmSpecSize,
     brandLogoSize: filmBrandLogoSize,
     warrantyLogoSize: filmWarrantyLogoSize,
-    watermark: watermarkId,
+    watermark: companyLogoId,
     quantity,
     startPos: savedStartPos,
     gridCols,
@@ -127,11 +127,13 @@ export default function App() {
   const [printLayoutDraft, setPrintLayoutDraft] = useState(null);
   const totalSlots = mode === 'business-card' ? 10 : mode === 'coupon' ? 6 : gridCols * gridRows;
   const startPos = Math.min(savedStartPos, totalSlots);
-  const filmWatermark = companyWatermarks.find((watermark) => watermark.id === watermarkId);
-  const watermarkSizePreference = `${watermarkId}Size`;
-  const watermarkOpacityPreference = `${watermarkId}Opacity`;
-  const filmWatermarkSize = filmPrintPreferences[watermarkSizePreference];
-  const filmWatermarkOpacity = filmPrintPreferences[watermarkOpacityPreference];
+  const filmCompanyLogo = companyLogos.find((logo) => logo.id === companyLogoId);
+  const companyLogoSizePreference = `${companyLogoId}LogoSize`;
+  // Fit the rotated logo into its own leading column without covering the specs.
+  const filmCompanyLogoLength = filmCompanyLogo.image ? Math.max(0, Math.min(
+    275 / gridRows - piecePaddingTop - piecePaddingBottom - 0.6,
+    (200 / gridCols - piecePaddingLeft - piecePaddingRight - 0.6) * 0.2 * filmCompanyLogo.aspectRatio,
+  )) * filmPrintPreferences[companyLogoSizePreference] / 100 : 0;
   const [showFilmSettings, setShowFilmSettings] = useState(false);
 
   // Business Card State
@@ -323,7 +325,7 @@ export default function App() {
     observer.observe(preview);
     for (const block of preview.children) observer.observe(block);
     return () => observer.disconnect();
-  }, [isFilmListPage, mode, startPos, quantity, filmSeries, filmModel, filmSeriesSize, filmModelSize, filmSpecSize, filmSpecs]);
+  }, [isFilmListPage, mode, startPos, quantity, filmSeries, filmModel, filmSeriesSize, filmModelSize, filmSpecSize, filmSpecs, gridCols, gridRows, piecePaddingTop, piecePaddingBottom, piecePaddingLeft, piecePaddingRight, companyLogoId, filmCompanyLogoLength, filmLogo1, filmLogo2]);
 
   // Handlers
   const updateFilmPrintPreference = (name, value) => {
@@ -721,24 +723,23 @@ export default function App() {
               )}
 
               <fieldset className="space-y-3 rounded-xl border border-slate-200 bg-white px-3 pb-3">
-                <legend className="px-1 text-sm font-semibold text-slate-800">ลายน้ำโลโก้บริษัท</legend>
+                <legend className="px-1 text-sm font-semibold text-slate-800">โลโก้บริษัทด้านหน้า</legend>
                 <div className="grid grid-cols-2 gap-2">
-                  {companyWatermarks.map((watermark) => (
+                  {companyLogos.map((logo) => (
                     <button
-                      key={watermark.id}
+                      key={logo.id}
                       type="button"
-                      onClick={() => updateFilmPrintPreference('watermark', watermark.id)}
-                      aria-pressed={filmWatermark === watermark}
-                      className={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-lg border px-2 py-1.5 text-xs font-semibold transition focus-visible:outline-2 focus-visible:outline-blue-600 ${filmWatermark === watermark ? 'border-blue-500 bg-blue-50 text-blue-800' : 'border-slate-200 bg-white text-slate-600 hover:border-blue-300'}`}
+                      onClick={() => updateFilmPrintPreference('watermark', logo.id)}
+                      aria-pressed={filmCompanyLogo === logo}
+                      className={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-lg border px-2 py-1.5 text-xs font-semibold transition focus-visible:outline-2 focus-visible:outline-blue-600 ${filmCompanyLogo === logo ? 'border-blue-500 bg-blue-50 text-blue-800' : 'border-slate-200 bg-white text-slate-600 hover:border-blue-300'}`}
                     >
-                      {watermark.image && <img src={watermark.image} alt="" className="h-5 w-full object-contain" />}
-                      {watermark.name}
+                      {logo.image && <img src={logo.image} alt="" className="h-5 w-full object-contain" />}
+                      {logo.name}
                     </button>
                   ))}
                 </div>
-                {filmWatermark.image && [
-                  { id: 'film-watermark-size', label: 'ขนาดลายน้ำ', name: watermarkSizePreference },
-                  { id: 'film-watermark-opacity', label: 'ความเข้มลายน้ำ', name: watermarkOpacityPreference },
+                {filmCompanyLogo.image && [
+                  { id: 'film-company-logo-size', label: 'ขนาดโลโก้บริษัท', name: companyLogoSizePreference },
                 ].map(({ id, label, name }) => (
                   <div key={id} className="grid grid-cols-[minmax(0,1fr)_4rem] items-center gap-x-3 gap-y-1">
                     <label htmlFor={id} className="text-xs font-medium text-slate-700">{label}</label>
@@ -1199,54 +1200,60 @@ export default function App() {
 
                       {mode === 'film' && (
                         <div 
-                          ref={slotNum === Math.max(1, Math.ceil(startPos)) ? filmPrintPreviewRef : null}
-                          className="w-full h-full flex flex-col justify-start box-border font-sans bg-white text-black z-10 relative"
+                          className="w-full h-full flex items-stretch gap-[2mm] box-border font-sans bg-white text-black z-10 relative"
                           style={{ paddingTop: `${piecePaddingTop}mm`, paddingBottom: `${piecePaddingBottom}mm`, paddingLeft: `${piecePaddingLeft}mm`, paddingRight: `${piecePaddingRight}mm` }}
                         >
-                          {filmWatermark.image && (
-                            <img
-                              src={filmWatermark.image}
-                              alt=""
-                              draggable={false}
-                              className="pointer-events-none absolute top-1/2 left-1/2 z-0 max-h-[85%] -translate-x-1/2 -translate-y-1/2 object-contain"
-                              style={{ width: `${filmWatermarkSize}%`, opacity: filmWatermarkOpacity / 100 }}
-                            />
+                          {filmCompanyLogo.image && (
+                            <div className="relative shrink-0" style={{ width: `${filmCompanyLogoLength / filmCompanyLogo.aspectRatio}mm` }}>
+                              <img
+                                src={filmCompanyLogo.image}
+                                alt={`โลโก้บริษัท ${filmCompanyLogo.name}`}
+                                draggable={false}
+                                className="pointer-events-none absolute top-1/2 left-1/2 max-w-none"
+                                style={{ width: `${filmCompanyLogoLength}mm`, height: 'auto', transform: 'translate(-50%, -50%) rotate(-90deg)' }}
+                              />
+                            </div>
                           )}
 
-                          {/* Top Header Logos */}
-                          <div className="relative z-10 flex justify-between items-start">
-                            {/* Main Logo Container */}
-                            <div className="flex max-w-[75%] items-start justify-start" style={{ width: `${32 * filmBrandLogoSize / 100}mm` }}>
-                              {filmLogo1 && (
-                                <img src={filmLogo1} className="max-w-full object-contain object-left-top" style={{ maxHeight: `${12.5 * filmBrandLogoSize / 100}mm` }} alt="Logo" />
-                              )}
-                            </div>
-                            {/* Warranty Badge Container */}
-                            <div className="flex max-w-[25%] items-start justify-end" style={{ width: `${9 * filmWarrantyLogoSize / 100}mm` }}>
-                              {filmLogo2 && (
-                                <img src={filmLogo2} className="max-w-full object-contain object-right-top" style={{ maxHeight: `${8 * filmWarrantyLogoSize / 100}mm` }} alt="Warranty" />
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Film Series Title */}
-                          <div className="relative z-10 flex items-baseline w-full">
-                            <span style={{ fontSize: `${filmSeriesSize}px` }} className="font-bold leading-tight text-black whitespace-nowrap tracking-tight">{filmSeries}</span>
-                            <div className="flex-grow border-b border-dotted border-slate-600 mx-1 mb-[2px]"></div>
-                            <span style={{ fontSize: `${filmModelSize}px` }} className="font-bold leading-tight text-black whitespace-nowrap">{filmModel}</span>
-                          </div>
-
-                          {/* Spec Rows */}
-                          <div className="relative z-10 flex flex-col mt-[1.5mm] w-full" style={{ fontSize: `${filmSpecSize}px`, rowGap: filmSpecSize > 8 ? '0.4mm' : '0.8mm' }}>
-                            {filmSpecs.filter(s => s.visible !== false && s.value && s.value.trim() !== '' && s.value.trim() !== '00').map((spec, i) => (
-                              <div key={i} className="flex items-baseline w-full">
-                                <span className="min-w-0 break-words font-medium leading-none text-black tracking-tight">{spec.label}</span>
-                                <div className="flex-grow border-b border-dotted border-slate-500 mx-1 mb-[1.5px]"></div>
-                                <span className="shrink-0 leading-none font-medium text-black whitespace-nowrap">
-                                  {spec.value}{specSuffix(spec)}
-                                </span>
+                          <div
+                            ref={slotNum === Math.max(1, Math.ceil(startPos)) ? filmPrintPreviewRef : null}
+                            className="min-w-0 flex-1 flex flex-col justify-start"
+                          >
+                            {/* Top Header Logos */}
+                            <div className="relative z-10 flex justify-between items-start">
+                              {/* Main Logo Container */}
+                              <div className="flex max-w-[75%] items-start justify-start" style={{ width: `${32 * filmBrandLogoSize / 100}mm` }}>
+                                {filmLogo1 && (
+                                  <img src={filmLogo1} className="max-w-full object-contain object-left-top" style={{ maxHeight: `${12.5 * filmBrandLogoSize / 100}mm` }} alt="Logo" />
+                                )}
                               </div>
-                            ))}
+                              {/* Warranty Badge Container */}
+                              <div className="flex max-w-[25%] items-start justify-end" style={{ width: `${9 * filmWarrantyLogoSize / 100}mm` }}>
+                                {filmLogo2 && (
+                                  <img src={filmLogo2} className="max-w-full object-contain object-right-top" style={{ maxHeight: `${8 * filmWarrantyLogoSize / 100}mm` }} alt="Warranty" />
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Film Series Title */}
+                            <div className="relative z-10 flex items-baseline w-full">
+                              <span style={{ fontSize: `${filmSeriesSize}px` }} className="font-bold leading-tight text-black whitespace-nowrap tracking-tight">{filmSeries}</span>
+                              <div className="flex-grow border-b border-dotted border-slate-600 mx-1 mb-[2px]"></div>
+                              <span style={{ fontSize: `${filmModelSize}px` }} className="font-bold leading-tight text-black whitespace-nowrap">{filmModel}</span>
+                            </div>
+
+                            {/* Spec Rows */}
+                            <div className="relative z-10 flex flex-col mt-[1mm] w-full" style={{ fontSize: `${filmSpecSize}px`, rowGap: filmSpecSize > 8 ? '0.4mm' : '0.8mm' }}>
+                              {filmSpecs.filter(s => s.visible !== false && s.value && s.value.trim() !== '' && s.value.trim() !== '00').map((spec, i) => (
+                                <div key={i} className="flex items-baseline w-full">
+                                  <span className="min-w-0 break-words font-medium leading-none text-black tracking-tight">{spec.label}</span>
+                                  <div className="flex-grow border-b border-dotted border-slate-500 mx-1 mb-[1.5px]"></div>
+                                  <span className="shrink-0 leading-none font-medium text-black whitespace-nowrap">
+                                    {spec.value}{specSuffix(spec)}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         </div>
                       )}

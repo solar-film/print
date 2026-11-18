@@ -1,7 +1,6 @@
 const storagePrefix = 'filmPrint.';
 const logoSize = { min: 50, max: 150, step: 5, defaultValue: 110 };
-const watermarkSize = { min: 20, max: 100, step: 5, defaultValue: 70 };
-const watermarkOpacity = { min: 0, max: 100, step: 1, defaultValue: 12 };
+const companyLogoSize = { min: 20, max: 100, step: 5, defaultValue: 100 };
 const verticalPadding = { min: 0, step: 0.5, defaultValue: 1.5 };
 const horizontalPadding = { ...verticalPadding, defaultValue: 2 };
 
@@ -11,17 +10,13 @@ export const filmPrintRanges = {
   specSize: { min: 6, max: 12, step: 0.5, defaultValue: 11.5 },
   brandLogoSize: logoSize,
   warrantyLogoSize: logoSize,
-  gfsSize: watermarkSize,
-  gfsOpacity: watermarkOpacity,
-  mhlSize: watermarkSize,
-  mhlOpacity: watermarkOpacity,
-  borneoSize: watermarkSize,
-  borneoOpacity: watermarkOpacity,
-  designSquareSize: watermarkSize,
-  designSquareOpacity: watermarkOpacity,
+  gfsLogoSize: companyLogoSize,
+  mhlLogoSize: companyLogoSize,
+  borneoLogoSize: companyLogoSize,
+  designSquareLogoSize: companyLogoSize,
   quantity: { min: 1, max: 1200, step: 1, defaultValue: 21 },
   startPos: { min: 1, max: 200, step: 1, defaultValue: 1 },
-  gridCols: { min: 1, max: 10, step: 1, defaultValue: 3 },
+  gridCols: { min: 1, max: 10, step: 1, defaultValue: 2 },
   gridRows: { min: 1, max: 20, step: 1, defaultValue: 7 },
   piecePaddingTop: verticalPadding,
   piecePaddingBottom: verticalPadding,
