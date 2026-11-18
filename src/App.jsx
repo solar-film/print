@@ -387,13 +387,18 @@ export default function App() {
 
     const pixelsPerMm = 96 / 25.4;
     preview.scrollTo(0, 0);
+    let frame;
     const observer = new ResizeObserver(([{ contentRect: { width, height } }]) => {
       const scale = Math.min(1, width / (210 * pixelsPerMm), height / (297 * pixelsPerMm));
-      preview.style.setProperty('--print-preview-scale', String(scale));
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        preview.style.setProperty('--print-preview-scale', String(scale));
+      });
     });
     observer.observe(preview);
     return () => {
       observer.disconnect();
+      cancelAnimationFrame(frame);
       preview.style.removeProperty('--print-preview-scale');
     };
   }, [fitPrintPreview]);
@@ -1232,6 +1237,33 @@ export default function App() {
         </div>
       </aside>
 
+      {mode === 'film' && selectedFilmSettings && (
+        <aside
+          id="film-settings-panel"
+          aria-labelledby="film-settings-heading"
+          onKeyDown={(event) => {
+            if (event.key === 'Escape') {
+              event.preventDefault();
+              closeFilmSettings();
+            }
+          }}
+          className="fixed inset-y-0 right-0 z-30 flex h-dvh w-[min(22rem,calc(100%_-_1rem))] shrink-0 flex-col border-l border-slate-200 bg-white shadow-xl lg:sticky lg:top-0 lg:shadow-none print:hidden"
+        >
+          <header className="flex shrink-0 items-center gap-3 border-b border-slate-200 px-4 py-3">
+            <selectedFilmSettings.icon size={19} className="shrink-0 text-blue-600" aria-hidden="true" />
+            <h2 id="film-settings-heading" ref={settingsHeadingRef} tabIndex={-1} className="flex-1 text-base font-bold text-slate-900 outline-none">
+              {selectedFilmSettings.title}
+            </h2>
+            <button type="button" aria-label="ปิดแผงตั้งค่า" onClick={closeFilmSettings} className="flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-blue-600">
+              <X size={19} aria-hidden="true" />
+            </button>
+          </header>
+          <div key={selectedFilmSettings.id} className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-4">
+            {selectedFilmSettings.content}
+          </div>
+        </aside>
+      )}
+
       {/* Main Preview Area */}
       <main ref={printPreviewRef} className={`min-w-0 flex-1 overflow-auto bg-slate-100 p-4 md:p-8 print:block print:overflow-visible print:bg-white print:p-0 ${fitPrintPreview ? 'lg:h-dvh lg:self-start print:h-auto' : ''}`}>
         <div className="print-preview-pages mx-auto w-max space-y-8 print:w-auto print:space-y-0">
@@ -1416,33 +1448,6 @@ export default function App() {
         ); })}
         </div>
       </main>
-
-      {mode === 'film' && selectedFilmSettings && (
-        <aside
-          id="film-settings-panel"
-          aria-labelledby="film-settings-heading"
-          onKeyDown={(event) => {
-            if (event.key === 'Escape') {
-              event.preventDefault();
-              closeFilmSettings();
-            }
-          }}
-          className="fixed inset-y-0 right-0 z-30 flex h-dvh w-[min(22rem,calc(100%_-_1rem))] shrink-0 flex-col border-l border-slate-200 bg-white shadow-xl lg:sticky lg:top-0 lg:shadow-none print:hidden"
-        >
-          <header className="flex shrink-0 items-center gap-3 border-b border-slate-200 px-4 py-3">
-            <selectedFilmSettings.icon size={19} className="shrink-0 text-blue-600" aria-hidden="true" />
-            <h2 id="film-settings-heading" ref={settingsHeadingRef} tabIndex={-1} className="flex-1 text-base font-bold text-slate-900 outline-none">
-              {selectedFilmSettings.title}
-            </h2>
-            <button type="button" aria-label="ปิดแผงตั้งค่า" onClick={closeFilmSettings} className="flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-blue-600">
-              <X size={19} aria-hidden="true" />
-            </button>
-          </header>
-          <div key={selectedFilmSettings.id} className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-4">
-            {selectedFilmSettings.content}
-          </div>
-        </aside>
-      )}
 
       {/* Database Manager Modal */}
       <DatabaseManager 
