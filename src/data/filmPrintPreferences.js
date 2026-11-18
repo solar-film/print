@@ -17,6 +17,8 @@ export const filmPrintRanges = {
   mhlOpacity: watermarkOpacity,
   borneoSize: watermarkSize,
   borneoOpacity: watermarkOpacity,
+  designSquareSize: watermarkSize,
+  designSquareOpacity: watermarkOpacity,
   quantity: { min: 1, max: 1200, step: 1, defaultValue: 21 },
   startPos: { min: 1, max: 200, step: 1, defaultValue: 1 },
   gridCols: { min: 1, max: 10, step: 1, defaultValue: 3 },
@@ -35,7 +37,7 @@ export function readFilmPrintPreferences() {
 
   try {
     const watermark = localStorage.getItem(`${storagePrefix}watermark`);
-    if (['gfs', 'mhl', 'borneo'].includes(watermark)) preferences.watermark = watermark;
+    if (['gfs', 'mhl', 'borneo', 'designSquare'].includes(watermark)) preferences.watermark = watermark;
 
     for (const [name, { min, max, step }] of Object.entries(filmPrintRanges)) {
       const saved = localStorage.getItem(`${storagePrefix}${name}`);

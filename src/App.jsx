@@ -15,12 +15,14 @@ import couponDefaultImage from './assets/templates/coupon.png';
 import gfsWatermarkImage from './assets/company-watermarks/gfs.png';
 import mhlWatermarkImage from './assets/company-watermarks/mhl.png';
 import borneoWatermarkImage from './assets/company-watermarks/borneo.png';
+import designSquareWatermarkImage from './assets/company-watermarks/design-square.png';
 
 const companyWatermarks = [
   { id: 'none', name: 'ไม่ใช้', image: null },
   { id: 'gfs', name: 'GFS', image: gfsWatermarkImage },
   { id: 'mhl', name: 'MHL', image: mhlWatermarkImage },
   { id: 'borneo', name: 'Borneo', image: borneoWatermarkImage },
+  { id: 'designSquare', name: 'Design Square', image: designSquareWatermarkImage },
 ];
 
 // Load all images from the templates directory automatically
