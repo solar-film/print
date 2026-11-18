@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useLayoutEffect, useMemo } from 'react';
-import { Settings, Image as ImageIcon, Type, Move, Printer, Download, LayoutGrid, FileText, CreditCard, Ticket, Plus, Trash2, ArrowRight, Hash, Database, Search, ChevronDown, ChevronRight, X, Loader2, TableProperties } from 'lucide-react';
+import { Settings, Image as ImageIcon, Type, Move, Printer, Download, LayoutGrid, FileText, CreditCard, Ticket, Plus, Trash2, ArrowRight, Hash, Database, Search, ChevronDown, ChevronRight, Check, X, Loader2, TableProperties } from 'lucide-react';
 import Papa from 'papaparse';
 import { toPng } from 'html-to-image';
 import { jsPDF } from 'jspdf';
@@ -106,6 +106,7 @@ const defaultFilm = filmDatabase.find(isDefaultFilm);
 
 function createFilmDraft(film) {
   return {
+    sourceFilm: film,
     brand: film.brand,
     series: film.series,
     model: film.model,
@@ -275,6 +276,7 @@ export default function App() {
   const catalogDefaultFilm = customDatabase.find(isDefaultFilm) ?? defaultFilm;
   const initialFilmDraft = useMemo(() => createFilmDraft(catalogDefaultFilm), [catalogDefaultFilm]);
   const {
+    sourceFilm,
     brand: filmBrand,
     series: filmSeries,
     model: filmModel,
@@ -551,6 +553,12 @@ export default function App() {
   const matchingFilms = isFilmPickerOpen ? customDatabase.filter((film) =>
     `${film.brand} ${film.series} ${film.model}`.toLowerCase().includes(filmQuery),
   ) : [];
+  // Keep the catalog selection separate from edits to the text printed on the sticker.
+  const selectedCatalogFilm = !isFilmPickerOpen || customDatabase.includes(sourceFilm)
+    ? sourceFilm
+    : customDatabase.find((film) =>
+      film.brand === sourceFilm.brand && film.series === sourceFilm.series && film.model === sourceFilm.model,
+    );
 
   const printQuantityFields = (
     <div className="grid grid-cols-2 gap-3">
@@ -631,17 +639,28 @@ export default function App() {
             </p>
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain rounded-lg border border-slate-200 p-1">
-            {matchingFilms.map((film, index) => (
-              <button
-                key={index}
-                type="button"
-                className="block min-h-11 w-full rounded border-b border-slate-100 px-3 py-2 text-left text-sm text-slate-800 last:border-0 hover:bg-blue-50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-blue-600"
-                onClick={() => setFilmDraft(createFilmDraft(film))}
-              >
-                <span className="font-semibold">{filmLabel(film) || film.series}</span>
-                {film.model && film.series && <span className="mt-0.5 block text-xs text-slate-600">{film.series}</span>}
-              </button>
-            ))}
+            {matchingFilms.map((film, index) => {
+              const isSelected = film === selectedCatalogFilm;
+              return (
+                <button
+                  key={index}
+                  type="button"
+                  aria-pressed={isSelected}
+                  className={`flex min-h-11 w-full items-center justify-between gap-2 rounded-md border px-3 py-2 text-left text-sm focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-blue-600 ${isSelected ? 'border-blue-400 bg-blue-100 text-blue-950' : 'border-transparent border-b-slate-100 text-slate-800 last:border-b-transparent hover:bg-slate-100'}`}
+                  onClick={() => setFilmDraft(createFilmDraft(film))}
+                >
+                  <span className="min-w-0 wrap-break-word">
+                    <span className="font-semibold">{filmLabel(film) || film.series}</span>
+                    {film.model && film.series && <span className="mt-0.5 block text-xs text-slate-600">{film.series}</span>}
+                  </span>
+                  {isSelected && (
+                    <span className="grid size-6 shrink-0 place-items-center rounded-full bg-blue-700 text-white">
+                      <Check size={15} aria-hidden="true" />
+                    </span>
+                  )}
+                </button>
+              );
+            })}
             {matchingFilms.length === 0 && (
               <p role="status" className="px-3 py-4 text-sm text-slate-600">ไม่พบรุ่น ลองค้นหาด้วยชื่อยี่ห้อ</p>
             )}
