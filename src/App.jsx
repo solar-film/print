@@ -812,13 +812,7 @@ export default function App() {
               </div>
             ))}
           </fieldset>
-        </>
-      ),
-    },
-    {
-      id: 'specs', title: 'สเปคฟิล์ม', icon: FileText,
-      content: (
-        <>
+
           <section className="rounded-xl border border-amber-200 bg-amber-50/70 p-3">
             <h2 className="flex items-center justify-between gap-2 text-sm font-bold text-amber-900">
               <span className="flex items-center">
