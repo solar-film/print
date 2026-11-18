@@ -22,7 +22,7 @@ const companyLogos = [
   { id: 'gfs', name: 'GFS', image: gfsCompanyLogoImage, aspectRatio: 3103 / 1297 },
   { id: 'mhl', name: 'MHL', image: mhlCompanyLogoImage, aspectRatio: 300 / 128 },
   { id: 'borneo', name: 'Borneo', image: borneoCompanyLogoImage, aspectRatio: 496 / 212 },
-  { id: 'designSquare', name: 'Design Square', image: designSquareCompanyLogoImage, aspectRatio: 722 / 202 },
+  { id: 'designSquare', name: 'Design Square', image: designSquareCompanyLogoImage, aspectRatio: 779 / 165 },
 ];
 
 // Load all images from the templates directory automatically
