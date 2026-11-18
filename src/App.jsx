@@ -573,7 +573,7 @@ export default function App() {
           <ArrowRight size={14} className="text-blue-600" aria-hidden="true" />
           เริ่มช่องที่
         </label>
-        <input {...printLayoutInput('startPos', { max: totalSlots, value: startPos })} className="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm font-medium focus:border-blue-500 focus:outline-2 focus:outline-blue-500" />
+        <input {...printLayoutInput('startPos', { max: totalSlots, value: startPos })} aria-describedby={mode === 'film' ? 'film-print-start-help' : undefined} className="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm font-medium focus:border-blue-500 focus:outline-2 focus:outline-blue-500" />
       </div>
     </div>
   );
@@ -611,6 +611,20 @@ export default function App() {
   );
 
   const filmSettings = [
+    {
+      id: 'paper', title: 'จัดหน้ากระดาษ', icon: LayoutGrid, value: `${gridCols} × ${gridRows}`,
+      content: (
+        <>
+          <div className="space-y-2 border-b border-slate-200 pb-4">
+            {printQuantityFields}
+            <p id="film-print-start-help" className="text-xs leading-relaxed text-slate-600">
+              ใช้ช่องที่ 1 เมื่อเริ่มพิมพ์บนแผ่นใหม่
+            </p>
+          </div>
+          {printPaperFields}
+        </>
+      ),
+    },
     {
       id: 'company-logo', title: 'โลโก้บริษัทด้านหน้า', icon: ImageIcon, value: filmCompanyLogo.name,
       content: (
@@ -819,10 +833,6 @@ export default function App() {
           </section>
         </>
       ),
-    },
-    {
-      id: 'paper', title: 'จัดหน้ากระดาษ', icon: LayoutGrid, value: `${gridCols} × ${gridRows}`,
-      content: printPaperFields,
     },
   ];
   const selectedFilmSettings = filmSettings.find(({ id }) => id === activeFilmSettings);
@@ -1061,15 +1071,6 @@ export default function App() {
                 </p>
               </section>
 
-              <section aria-labelledby="film-quantity-title" className="rounded-2xl border border-slate-200 bg-white p-3.5">
-                <h2 id="film-quantity-title" className="mb-3 flex items-center gap-2 text-base font-bold text-slate-900">
-                  <span aria-hidden="true" className="grid size-6 shrink-0 place-items-center rounded-full bg-blue-600 text-xs text-white">2</span>
-                  กำหนดจำนวนพิมพ์
-                </h2>
-                {printQuantityFields}
-                <p className="mt-2 text-xs leading-relaxed text-slate-600">ใช้ช่องที่ 1 เมื่อเริ่มพิมพ์บนแผ่นใหม่</p>
-              </section>
-
               {filmPrintOverflows && (
                 <p role="status" className="rounded-lg bg-amber-50 px-2.5 py-2 text-xs leading-snug text-amber-900">
                   เนื้อหาล้นขอบสติกเกอร์ ลองลดขนาดโลโก้หรือตัวอักษร หรือปรับจำนวนแถวและคอลัมน์ก่อนพิมพ์
@@ -1095,7 +1096,11 @@ export default function App() {
                       }}
                       className={`flex min-h-12 w-full cursor-pointer items-center gap-2.5 rounded-xl border px-3 py-2 text-left text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-blue-600 ${isOpen ? 'border-blue-500 bg-blue-50 text-blue-900 ring-1 ring-blue-500/20' : 'border-slate-200 bg-white text-slate-800 hover:bg-slate-50'}`}
                     >
-                      <Icon size={16} className="shrink-0 text-blue-600" aria-hidden="true" />
+                      {id === 'paper' ? (
+                        <span aria-hidden="true" className="grid size-6 shrink-0 place-items-center rounded-full bg-blue-600 text-xs text-white">2</span>
+                      ) : (
+                        <Icon size={16} className="shrink-0 text-blue-600" aria-hidden="true" />
+                      )}
                       <span className="flex-1">{title}</span>
                       {value && <span className={`text-xs font-medium ${isOpen ? 'text-blue-800' : 'text-slate-600'}`}>{value}</span>}
                       <ChevronRight size={16} className={`shrink-0 ${isOpen ? 'text-blue-600' : 'text-slate-500'}`} aria-hidden="true" />
