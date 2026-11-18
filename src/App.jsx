@@ -33,9 +33,30 @@ const predefinedTemplates = Object.keys(templateFiles).map((path, index) => {
 });
 
 const logoFiles = import.meta.glob('./assets/film-logos/*.{png,jpg,jpeg,svg,webp,PNG,JPG,JPEG}', { eager: true, import: 'default' });
-const predefinedLogos = Object.keys(logoFiles).map((path, index) => {
-  const filename = path.split('/').pop();
-  return { id: index, name: filename, url: logoFiles[path] };
+// Prefer named logos when the catalog still contains their numbered predecessors.
+const legacyFilmLogoNames = {
+  1: '3M',
+  2: 'LAMINA',
+  3: 'AMERRICANKING',
+  4: 'HI-KOOL',
+  5: 'IZY-KOOL',
+  6: 'IZY-KOOL-CERAMIC',
+  7: 'NANOTECH',
+  9: 'G-TEC',
+  10: 'COOPER',
+  11: 'COOPER-TPU',
+  12: 'MAXTECH',
+};
+const filmLogoAssets = Object.entries(logoFiles).map(([path, url]) => ({
+  id: path,
+  name: path.split('/').pop(),
+  url,
+}));
+const filmLogoAssetKeys = new Set(filmLogoAssets.map(({ name }) => assetKey(name)));
+const predefinedLogos = filmLogoAssets.flatMap((logo) => {
+  const brand = legacyFilmLogoNames[assetKey(logo.name)];
+  if (!brand) return [logo];
+  return filmLogoAssetKeys.has(assetKey(brand)) ? [] : [{ ...logo, name: brand }];
 });
 
 const warrantyFiles = import.meta.glob('./assets/film-warranties/*.{png,jpg,jpeg,svg,webp,PNG,JPG,JPEG}', { eager: true, import: 'default' });
