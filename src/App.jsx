@@ -14,11 +14,13 @@ import { filmPrintRanges, readFilmPrintPreferences, saveFilmPrintPreference } fr
 import couponDefaultImage from './assets/templates/coupon.png';
 import gfsWatermarkImage from './assets/company-watermarks/gfs.png';
 import mhlWatermarkImage from './assets/company-watermarks/mhl.png';
+import borneoWatermarkImage from './assets/company-watermarks/borneo.png';
 
 const companyWatermarks = [
   { id: 'none', name: 'ไม่ใช้', image: null },
   { id: 'gfs', name: 'GFS', image: gfsWatermarkImage },
   { id: 'mhl', name: 'MHL', image: mhlWatermarkImage },
+  { id: 'borneo', name: 'Borneo', image: borneoWatermarkImage },
 ];
 
 // Load all images from the templates directory automatically
@@ -718,7 +720,7 @@ export default function App() {
 
               <fieldset className="space-y-3 rounded-xl border border-slate-200 bg-white px-3 pb-3">
                 <legend className="px-1 text-sm font-semibold text-slate-800">ลายน้ำโลโก้บริษัท</legend>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 gap-2">
                   {companyWatermarks.map((watermark) => (
                     <button
                       key={watermark.id}
