@@ -93,6 +93,27 @@ function createFilmDraft(film) {
   };
 }
 
+const printModes = [
+  { id: 'film', label: 'ฟิล์ม', icon: FileText },
+  { id: 'general', label: 'ตกแต่ง', icon: ImageIcon },
+  { id: 'business-card', label: 'นามบัตร', icon: CreditCard },
+  { id: 'coupon', label: 'คูปอง', icon: Ticket },
+];
+
+function SidebarDisclosure({ title, icon: Icon, value, children }) {
+  return (
+    <details className="group rounded-xl border border-slate-200 bg-white open:border-blue-200">
+      <summary className="flex min-h-12 cursor-pointer list-none items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-blue-600 [&::-webkit-details-marker]:hidden">
+        <Icon size={16} className="shrink-0 text-blue-600" aria-hidden="true" />
+        <span className="flex-1">{title}</span>
+        {value && <span className="text-xs font-medium text-slate-600">{value}</span>}
+        <ChevronDown size={16} className="shrink-0 text-slate-500 transition-transform group-open:rotate-180" aria-hidden="true" />
+      </summary>
+      <div className="space-y-4 border-t border-slate-100 px-3 py-4">{children}</div>
+    </details>
+  );
+}
+
 export default function App() {
   const { notify } = useDialog();
   const { isUnlocked: isFilmEditUnlocked, canEdit: canEditFilmDatabase } = useFilmEditAccess();
@@ -135,7 +156,6 @@ export default function App() {
     275 / gridRows - piecePaddingTop - piecePaddingBottom - 0.6,
     (200 / gridCols - piecePaddingLeft - piecePaddingRight - 0.6) * 0.2 * filmCompanyLogo.aspectRatio,
   )) * filmPrintPreferences[companyLogoSizePreference] / 100 : 0;
-  const [showFilmSettings, setShowFilmSettings] = useState(false);
 
   // Business Card State
   const [businessCardImage, setBusinessCardImage] = useState(null);
@@ -286,6 +306,7 @@ export default function App() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [dropdownSearch, setDropdownSearch] = useState('');
   const dropdownRef = useRef(null);
+  const filmPickerButtonRef = useRef(null);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -433,6 +454,69 @@ export default function App() {
     ? { width: '210mm', height: '297mm', paddingTop: '5mm', paddingLeft: '5mm', paddingRight: '5mm' }
     : { width: '210mm', height: '297mm', paddingTop: '8.5mm', paddingLeft: '5mm', paddingRight: '5mm' };
 
+  const dropdownQuery = dropdownSearch.trim().toLowerCase();
+  const matchingFilms = isDropdownOpen ? customDatabase.filter((film) =>
+    `${film.brand} ${film.series} ${film.model}`.toLowerCase().includes(dropdownQuery),
+  ) : [];
+
+  const printQuantityFields = (
+    <div className="grid grid-cols-2 gap-3">
+      <div>
+        <label htmlFor="print-layout-quantity" className="mb-1 flex items-center gap-1 text-sm font-medium text-slate-700">
+          <Hash size={14} className="text-blue-600" aria-hidden="true" />
+          {mode === 'coupon' ? 'จำนวนแผ่น (แผ่นละ 6 ใบ)' : 'จำนวนดวง'}
+        </label>
+        <input
+          {...printLayoutInput('quantity', mode === 'coupon' ? {
+            max: filmPrintRanges.quantity.max / 6,
+            value: Math.ceil(quantity / 6),
+            multiplier: 6,
+          } : undefined)}
+          className="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm font-medium focus:border-blue-500 focus:outline-2 focus:outline-blue-500"
+        />
+      </div>
+      <div>
+        <label htmlFor="print-layout-startPos" className="mb-1 flex items-center gap-1 text-sm font-medium text-slate-700">
+          <ArrowRight size={14} className="text-blue-600" aria-hidden="true" />
+          เริ่มช่องที่
+        </label>
+        <input {...printLayoutInput('startPos', { max: totalSlots, value: startPos })} className="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm font-medium focus:border-blue-500 focus:outline-2 focus:outline-blue-500" />
+      </div>
+    </div>
+  );
+
+  const printPaperFields = (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-3">
+        {[
+          ['gridCols', 'คอลัมน์แนวนอน'],
+          ['gridRows', 'แถวแนวตั้ง'],
+        ].map(([name, label]) => (
+          <div key={name}>
+            <label htmlFor={`print-layout-${name}`} className="mb-1 block text-sm font-medium text-slate-700">{label}</label>
+            <input {...printLayoutInput(name)} className="min-h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus-visible:outline-2 focus-visible:outline-blue-600" />
+          </div>
+        ))}
+      </div>
+      <fieldset>
+        <legend className="mb-2 text-sm font-semibold text-slate-700">ระยะขอบแต่ละดวง (มม.)</legend>
+        <div className="grid grid-cols-4 gap-2">
+          {[
+            ['piecePaddingTop', 'บน'],
+            ['piecePaddingBottom', 'ล่าง'],
+            ['piecePaddingLeft', 'ซ้าย'],
+            ['piecePaddingRight', 'ขวา'],
+          ].map(([name, label]) => (
+            <div key={name}>
+              <label htmlFor={`print-layout-${name}`} className="mb-1 block text-center text-xs text-slate-600">{label}</label>
+              <input {...printLayoutInput(name)} className="min-h-10 w-full rounded-lg border border-slate-300 px-1 text-center text-sm focus-visible:outline-2 focus-visible:outline-blue-600" />
+            </div>
+          ))}
+        </div>
+      </fieldset>
+    </div>
+  );
+
   if (isFilmListPage) {
     return (
       <FilmSpecTable
@@ -447,8 +531,8 @@ export default function App() {
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row font-sans text-slate-800 print:block">
       
       {/* Sidebar */}
-      <aside className="w-full md:w-[350px] bg-white border-r border-slate-200 shadow-sm flex flex-col h-screen md:sticky top-0 z-10 print:hidden overflow-y-auto">
-        <div className="p-6 border-b border-slate-100 flex flex-col space-y-4">
+      <aside className="z-10 flex w-full shrink-0 flex-col border-slate-200 bg-white md:sticky md:top-0 md:h-dvh md:w-[350px] md:border-r print:hidden">
+        <div className="flex shrink-0 flex-col gap-3 border-b border-slate-100 px-4 py-3.5">
           <a
             href="https://docs.google.com/spreadsheets/d/1Xc4EY34N1u75-N899BUnb4Rrkv-1qq189R1Gqp94aIg/edit?pli=1&gid=292272685#gid=292272685"
             target="_blank"
@@ -459,7 +543,7 @@ export default function App() {
             <div className="bg-blue-600 p-2 rounded-lg text-white">
               <LayoutGrid size={24} />
             </div>
-            <h1 className="text-xl font-bold text-slate-900 tracking-tight">Print Sticker & NameCard</h1>
+            <h1 className="text-base font-bold text-slate-900">พิมพ์สติกเกอร์และนามบัตร</h1>
           </a>
           
           {(deferredPrompt || showIosInstall) && (
@@ -472,38 +556,25 @@ export default function App() {
           )}
         </div>
 
-        {/* Mode Tabs */}
-        <div className="p-4 bg-slate-50 border-b border-slate-200 flex space-x-2">
-          <button 
-            onClick={() => setMode('film')}
-            className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all flex justify-center items-center ${mode === 'film' ? 'bg-slate-800 text-white shadow-md' : 'text-slate-500 hover:bg-slate-200'}`}
-          >
-            <FileText size={16} className="mr-1" /> ฟิล์ม
-          </button>
-          <button 
-            onClick={() => setMode('general')}
-            className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all flex justify-center items-center ${mode === 'general' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-200'}`}
-          >
-            <ImageIcon size={16} className="mr-1" /> ตกแต่ง
-          </button>
-          <button 
-            onClick={() => setMode('business-card')}
-            className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all flex justify-center items-center ${mode === 'business-card' ? 'bg-amber-500 text-white shadow-md' : 'text-slate-500 hover:bg-slate-200'}`}
-          >
-            <CreditCard size={16} className="mr-1" /> นามบัตร
-          </button>
-          
-          <button 
-            onClick={() => setMode('coupon')}
-            className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all flex justify-center items-center ${mode === 'coupon' ? 'bg-red-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-200'}`}
-          >
-            <Ticket className="w-5 h-5 mr-2" />
-            <span className="font-medium tracking-wide">คูปอง</span>
-          </button>
-        </div>
+        <nav aria-label="ประเภทงานพิมพ์" className="grid shrink-0 grid-cols-4 gap-1 border-b border-slate-200 bg-slate-50 px-3 py-2">
+          {printModes.map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              type="button"
+              aria-pressed={mode === id}
+              onClick={() => {
+                setMode(id);
+                setIsDropdownOpen(false);
+              }}
+              className={`flex min-h-12 flex-col items-center justify-center gap-1 rounded-lg px-1 py-1.5 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-blue-600 ${mode === id ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-200'}`}
+            >
+              <Icon size={17} aria-hidden="true" />
+              {label}
+            </button>
+          ))}
+        </nav>
 
-        <div className="flex-grow overflow-y-auto p-6 space-y-6">
-          
+        <div className="min-h-0 flex-1 space-y-4 p-4 md:overflow-y-auto">
           {mode === 'general' && (
             <>
               {/* General Mode Form */}
@@ -607,124 +678,86 @@ export default function App() {
 
           {mode === 'film' && (
             <>
-              {/* Film Mode Form */}
-              <div className="space-y-4">
-                <h2 className="flex items-center text-base font-bold text-slate-900">
-                  <Type size={18} className="mr-2 text-blue-600" /> เลือกรุ่นที่ต้องการพิมพ์
+              <section aria-labelledby="film-pick-title" className="rounded-2xl border border-blue-200 bg-blue-50/70 p-3.5">
+                <h2 id="film-pick-title" className="mb-3 flex items-center gap-2 text-base font-bold text-slate-900">
+                  <span aria-hidden="true" className="grid size-6 shrink-0 place-items-center rounded-full bg-blue-600 text-xs text-white">1</span>
+                  เลือกรุ่นฟิล์ม
                 </h2>
+                <div
+                  className="relative"
+                  ref={dropdownRef}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Escape' && isDropdownOpen) {
+                      setIsDropdownOpen(false);
+                      filmPickerButtonRef.current?.focus();
+                    }
+                  }}
+                >
+                  <button
+                    ref={filmPickerButtonRef}
+                    type="button"
+                    aria-expanded={isDropdownOpen}
+                    aria-controls={isDropdownOpen ? 'film-picker-options' : undefined}
+                    className="flex min-h-12 w-full items-center gap-2 rounded-xl border border-blue-200 bg-white px-3 py-2 text-left text-sm text-slate-900 shadow-sm hover:border-blue-500 focus-visible:outline-2 focus-visible:outline-blue-600"
+                    onClick={() => setIsDropdownOpen((open) => !open)}
+                  >
+                    <Search size={17} className="shrink-0 text-blue-600" aria-hidden="true" />
+                    <span className="min-w-0 flex-1 break-words font-semibold">
+                      {filmLabel({ brand: filmBrand, model: filmModel }) || filmSeries || 'ค้นหายี่ห้อหรือรุ่น'}
+                    </span>
+                    <ChevronDown size={16} className={`shrink-0 text-slate-500 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
+                  </button>
 
-                <div className="relative mb-2 rounded-xl border-2 border-blue-300 bg-gradient-to-br from-blue-100 via-sky-50 to-indigo-100 p-3 shadow-md shadow-blue-100/80">
-                  <div className="relative" ref={dropdownRef}>
-                    <div 
-                      className="flex w-full cursor-pointer items-center justify-between rounded-xl border border-blue-300 bg-white px-4 py-3 text-sm shadow-sm transition-all hover:border-blue-500 hover:shadow-md"
-                      onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                    >
-                      <span className={filmLabel({ brand: filmBrand, series: filmSeries, model: filmModel }) ? "text-slate-800 font-medium" : "text-slate-400"}>
-                        {filmLabel({ brand: filmBrand, series: filmSeries, model: filmModel }) || '-- พิมพ์เพื่อค้นหา หรือเลือกรุ่นฟิล์ม --'}
-                      </span>
-                      <ChevronDown size={16} className={`text-slate-400 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
-                    </div>
-                    
-                    {isDropdownOpen && (
-                      <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-xl max-h-64 overflow-hidden flex flex-col">
-                        <div className="p-2 border-b border-slate-100 flex items-center bg-slate-50 sticky top-0">
-                          <Search size={14} className="text-slate-400 mr-2" />
-                          <input 
-                            type="text" 
-                            autoFocus
-                            placeholder="ค้นหา ยี่ห้อ หรือรุ่น..."
-                            className="w-full text-sm bg-transparent outline-none"
-                            value={dropdownSearch}
-                            onChange={(e) => setDropdownSearch(e.target.value)}
-                          />
-                        </div>
-                        <div className="overflow-y-auto p-1 flex-1">
-                          {customDatabase.filter(f => 
-                            `${f.brand} ${f.series} ${f.model}`.toLowerCase().includes(dropdownSearch.toLowerCase())
-                          ).length > 0 ? (
-                            customDatabase.filter(f => 
-                              `${f.brand} ${f.series} ${f.model}`.toLowerCase().includes(dropdownSearch.toLowerCase())
-                            ).map((f, i) => (
-                              <div 
-                                key={i}
-                                className="px-3 py-2 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-700 rounded cursor-pointer border-b border-slate-50 last:border-0"
-                                onClick={() => {
-                                  setFilmDraft(createFilmDraft(f));
-                                  setIsDropdownOpen(false);
-                                  setDropdownSearch('');
-                                }}
-                              >
-                                {f.brand && <span className="font-semibold text-blue-800 text-[10px] uppercase tracking-wider mr-2 bg-blue-100 px-1.5 py-0.5 rounded">{f.brand}</span>}
-                                <span className="font-medium text-slate-900">{f.model}</span>
-                              </div>
-                            ))
-                          ) : (
-                            <div className="px-3 py-6 text-center text-sm text-slate-400">ไม่พบผลลัพธ์ที่ค้นหา</div>
-                          )}
-                        </div>
+                  {isDropdownOpen && (
+                    <div id="film-picker-options" className="mt-2 flex max-h-60 flex-col overflow-hidden rounded-lg border border-blue-200 bg-white shadow-sm">
+                      <div className="border-b border-slate-200 p-2">
+                        <input
+                          type="search"
+                          autoFocus
+                          aria-label="ค้นหายี่ห้อ ซีรีส์ หรือรุ่น"
+                          placeholder="พิมพ์ชื่อยี่ห้อ ซีรีส์ หรือรุ่น"
+                          className="min-h-10 w-full rounded bg-slate-50 px-2 text-sm focus-visible:outline-2 focus-visible:outline-blue-600"
+                          value={dropdownSearch}
+                          onChange={(event) => setDropdownSearch(event.target.value)}
+                        />
                       </div>
-                    )}
-                  </div>
+                      <div className="min-h-0 flex-1 overflow-y-auto p-1">
+                        {matchingFilms.map((film, index) => (
+                          <button
+                            key={index}
+                            type="button"
+                            className="block min-h-11 w-full rounded border-b border-slate-100 px-3 py-2 text-left text-sm text-slate-800 last:border-0 hover:bg-blue-50 focus-visible:outline-2 focus-visible:outline-blue-600"
+                            onClick={() => {
+                              setFilmDraft(createFilmDraft(film));
+                              setIsDropdownOpen(false);
+                              setDropdownSearch('');
+                              filmPickerButtonRef.current?.focus();
+                            }}
+                          >
+                            <span className="font-semibold">{filmLabel(film) || film.series}</span>
+                            {film.model && film.series && <span className="mt-0.5 block text-xs text-slate-600">{film.series}</span>}
+                          </button>
+                        ))}
+                        {matchingFilms.length === 0 && (
+                          <p role="status" className="px-3 py-4 text-sm text-slate-600">ไม่พบรุ่น ลองค้นหาด้วยชื่อยี่ห้อ</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
+                <p className="mt-2 text-xs leading-relaxed text-slate-600">
+                  เลือกรุ่นเพื่อใส่สเปคและโลโก้ให้โดยอัตโนมัติ
+                </p>
+              </section>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="block text-xs font-medium text-slate-700">ชื่อซีรีส์ (ซ้าย)</label>
-                    <input type="text" value={filmSeries} onChange={(e) => updateFilmDraft('series', e.target.value)} className="w-full px-3 py-1.5 text-sm border border-slate-300 rounded focus:ring-2 focus:ring-slate-800 outline-none" />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="block text-xs font-medium text-slate-700">รุ่น (ขวา)</label>
-                    <input type="text" value={filmModel} onChange={(e) => updateFilmDraft('model', e.target.value)} className="w-full px-3 py-1.5 text-sm border border-slate-300 rounded focus:ring-2 focus:ring-slate-800 outline-none" />
-                  </div>
-                </div>
-              </div>
-
-              <fieldset className="space-y-3 rounded-xl border border-slate-200 bg-white px-3 pb-3">
-                <legend className="px-1 text-sm font-semibold text-slate-800">ขนาดตัวอักษรบนสติกเกอร์</legend>
-                {[
-                  { id: 'film-series-size', label: 'ชื่อซีรีส์', name: 'seriesSize' },
-                  { id: 'film-model-size', label: 'ชื่อรุ่น', name: 'modelSize' },
-                  { id: 'film-spec-size', label: 'หัวข้อและค่าสเปค', name: 'specSize' },
-                ].map(({ id, label, name }) => (
-                  <div key={id} className="grid grid-cols-[minmax(0,1fr)_4rem] items-center gap-x-3 gap-y-1">
-                    <label htmlFor={id} className="text-xs font-medium text-slate-700">{label}</label>
-                    <output htmlFor={id} className="row-span-2 text-right text-xs font-semibold tabular-nums text-slate-600">{filmPrintPreferences[name]} px</output>
-                    <input
-                      id={id}
-                      type="range"
-                      min={filmPrintRanges[name].min}
-                      max={filmPrintRanges[name].max}
-                      step={filmPrintRanges[name].step}
-                      value={filmPrintPreferences[name]}
-                      onChange={(event) => updateFilmPrintPreference(name, event.target.valueAsNumber)}
-                      className="w-full accent-blue-600"
-                    />
-                  </div>
-                ))}
-              </fieldset>
-
-              <fieldset className="space-y-3 rounded-xl border border-slate-200 bg-white px-3 pb-3">
-                <legend className="px-1 text-sm font-semibold text-slate-800">ขนาดโลโก้บนสติกเกอร์</legend>
-                {[
-                  { id: 'film-brand-logo-size', label: 'โลโก้แบรนด์ (ซ้าย)', name: 'brandLogoSize' },
-                  { id: 'film-warranty-logo-size', label: 'ตรารับประกัน (ขวา)', name: 'warrantyLogoSize' },
-                ].map(({ id, label, name }) => (
-                  <div key={id} className="grid grid-cols-[minmax(0,1fr)_4rem] items-center gap-x-3 gap-y-1">
-                    <label htmlFor={id} className="text-xs font-medium text-slate-700">{label}</label>
-                    <output htmlFor={id} className="row-span-2 text-right text-xs font-semibold tabular-nums text-slate-600">{filmPrintPreferences[name]}%</output>
-                    <input
-                      id={id}
-                      type="range"
-                      min={filmPrintRanges[name].min}
-                      max={filmPrintRanges[name].max}
-                      step={filmPrintRanges[name].step}
-                      value={filmPrintPreferences[name]}
-                      onChange={(event) => updateFilmPrintPreference(name, event.target.valueAsNumber)}
-                      className="w-full accent-blue-600"
-                    />
-                  </div>
-                ))}
-              </fieldset>
+              <section aria-labelledby="film-quantity-title" className="rounded-2xl border border-slate-200 bg-white p-3.5">
+                <h2 id="film-quantity-title" className="mb-3 flex items-center gap-2 text-base font-bold text-slate-900">
+                  <span aria-hidden="true" className="grid size-6 shrink-0 place-items-center rounded-full bg-blue-600 text-xs text-white">2</span>
+                  กำหนดจำนวนพิมพ์
+                </h2>
+                {printQuantityFields}
+                <p className="mt-2 text-xs leading-relaxed text-slate-600">ใช้ช่องที่ 1 เมื่อเริ่มพิมพ์บนแผ่นใหม่</p>
+              </section>
 
               {filmPrintOverflows && (
                 <p role="status" className="rounded-lg bg-amber-50 px-2.5 py-2 text-xs leading-snug text-amber-900">
@@ -732,8 +765,7 @@ export default function App() {
                 </p>
               )}
 
-              <fieldset className="space-y-3 rounded-xl border border-slate-200 bg-white px-3 pb-3">
-                <legend className="px-1 text-sm font-semibold text-slate-800">โลโก้บริษัทด้านหน้า</legend>
+              <SidebarDisclosure title="โลโก้บริษัทด้านหน้า" icon={ImageIcon} value={filmCompanyLogo.name}>
                 <div className="grid grid-cols-2 gap-2">
                   {companyLogos.map((logo) => (
                     <button
@@ -766,103 +798,157 @@ export default function App() {
                     />
                   </div>
                 ))}
-              </fieldset>
+              </SidebarDisclosure>
 
-              <button
-                type="button"
-                onClick={() => setShowFilmSettings((isOpen) => !isOpen)}
-                aria-expanded={showFilmSettings}
-                className="flex w-full items-center justify-between rounded-xl border border-amber-200 bg-amber-50/80 px-4 py-3 text-sm font-bold text-amber-900 shadow-sm transition-colors hover:bg-amber-100 focus-visible:outline-2 focus-visible:outline-amber-500"
-              >
-                <span className="flex items-center"><Settings size={16} className="mr-2 text-amber-600" /> รายละเอียดฟิล์มและการพิมพ์</span>
-                <ChevronDown size={16} className={`text-amber-600 transition-transform ${showFilmSettings ? 'rotate-180' : ''}`} />
-              </button>
-
-              <section className={`${showFilmSettings ? 'block' : 'hidden'} bg-amber-50/80 p-4 rounded-xl border border-amber-200 shadow-sm relative overflow-hidden`}>
-                <div className="absolute top-0 left-0 w-1.5 h-full bg-amber-400"></div>
-                <h2 className="flex items-center justify-between gap-2 text-sm font-bold text-amber-900">
-                  <span className="flex items-center">
-                    <Settings size={16} className="mr-2 text-amber-600" /> ค่าสเปค (%)
-                  </span>
-                </h2>
-                  <p className="text-[11px] text-amber-700 leading-snug mt-3 font-medium">
-                    ⚠️ ตรวจสอบและแก้ไขค่าให้ตรงรุ่นก่อนพิมพ์
-                  </p>
-                <div className="space-y-2 mt-2">
-                  {filmSpecs.map((spec, idx) => (
-                    <div key={idx} className={`flex items-center justify-between space-x-2 transition-opacity ${spec.visible === false ? 'opacity-50' : 'opacity-100'}`}>
-                      <div className="flex items-center space-x-2 flex-1 min-w-0">
-                        <input type="checkbox" checked={spec.visible !== false} onChange={(e) => handleSpecToggle(idx, e.target.checked)} className="w-3.5 h-3.5 shrink-0 text-amber-600 rounded border-amber-300 focus:ring-amber-500 cursor-pointer" />
-                        <label className={`text-xs font-medium whitespace-normal break-words leading-snug cursor-pointer ${spec.visible === false ? 'text-slate-500 line-through' : 'text-amber-900'}`} title={spec.label} onClick={() => handleSpecToggle(idx, spec.visible === false)}>{spec.label}</label>
-                      </div>
-                      <div className={`flex items-center w-[110px] shrink-0 bg-white rounded shadow-sm border focus-within:ring-2 focus-within:ring-amber-500 ${spec.visible === false ? 'border-slate-200' : 'border-amber-200'}`}>
-                        <input type="text" value={spec.value} onChange={(e) => handleSpecChange(idx, e.target.value)} disabled={spec.visible === false} className="w-full px-2 py-1 text-sm text-right outline-none bg-transparent font-semibold text-slate-800 disabled:text-slate-500" />
-                        <span className={`text-xs font-bold pr-2 ${spec.visible === false ? 'text-slate-400' : 'text-amber-600'}`}>{specSuffix(spec)}</span>
-                      </div>
+              <SidebarDisclosure title="ข้อความและขนาด" icon={Type}>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label htmlFor="film-series-text" className="block text-xs font-medium text-slate-700">ชื่อซีรีส์ (ซ้าย)</label>
+                    <input id="film-series-text" type="text" value={filmSeries} onChange={(e) => updateFilmDraft('series', e.target.value)} className="w-full px-3 py-1.5 text-sm border border-slate-300 rounded focus:ring-2 focus:ring-slate-800 outline-none" />
+                  </div>
+                  <div className="space-y-2">
+                    <label htmlFor="film-model-text" className="block text-xs font-medium text-slate-700">รุ่น (ขวา)</label>
+                    <input id="film-model-text" type="text" value={filmModel} onChange={(e) => updateFilmDraft('model', e.target.value)} className="w-full px-3 py-1.5 text-sm border border-slate-300 rounded focus:ring-2 focus:ring-slate-800 outline-none" />
+                  </div>
+                </div>
+                <fieldset className="space-y-3 rounded-xl border border-slate-200 bg-white px-3 pb-3">
+                  <legend className="px-1 text-sm font-semibold text-slate-800">ขนาดตัวอักษรบนสติกเกอร์</legend>
+                  {[
+                    { id: 'film-series-size', label: 'ชื่อซีรีส์', name: 'seriesSize' },
+                    { id: 'film-model-size', label: 'ชื่อรุ่น', name: 'modelSize' },
+                    { id: 'film-spec-size', label: 'หัวข้อและค่าสเปค', name: 'specSize' },
+                  ].map(({ id, label, name }) => (
+                    <div key={id} className="grid grid-cols-[minmax(0,1fr)_4rem] items-center gap-x-3 gap-y-1">
+                      <label htmlFor={id} className="text-xs font-medium text-slate-700">{label}</label>
+                      <output htmlFor={id} className="row-span-2 text-right text-xs font-semibold tabular-nums text-slate-600">{filmPrintPreferences[name]} px</output>
+                      <input
+                        id={id}
+                        type="range"
+                        min={filmPrintRanges[name].min}
+                        max={filmPrintRanges[name].max}
+                        step={filmPrintRanges[name].step}
+                        value={filmPrintPreferences[name]}
+                        onChange={(event) => updateFilmPrintPreference(name, event.target.valueAsNumber)}
+                        className="w-full accent-blue-600"
+                      />
                     </div>
                   ))}
-                </div>
-              </section>
+                </fieldset>
 
-              <section className={showFilmSettings ? 'space-y-3' : 'hidden'}>
-                <h2 className="flex items-center justify-between text-sm font-semibold uppercase tracking-wider text-slate-400">
-                  <span className="flex items-center"><ImageIcon size={16} className="mr-2" /> โลโก้แบรนด์ (ซ้าย)</span>
-                  {filmLogo1 && <button type="button" onClick={() => updateFilmDraft('brandLogo', null)} className="text-xs font-medium normal-case text-red-500 hover:text-red-600">นำออก</button>}
-                </h2>
-                
-                <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
-                  {predefinedLogos.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
-                      {predefinedLogos.map((tpl) => (
-                        <button
-                          key={tpl.id}
-                          onClick={() => updateFilmDraft('brandLogo', tpl.url)}
-                          title={tpl.name}
-                          className={`flex-shrink-0 w-16 h-10 border-2 rounded-lg overflow-hidden transition-all bg-white ${
-                            filmLogo1 === tpl.url ? 'border-blue-600 shadow-md scale-105' : 'border-slate-200 hover:border-slate-300'
-                          }`}
-                        >
-                          <img src={tpl.url} alt={tpl.name} className="w-full h-full object-contain p-0.5" onError={(e) => e.target.style.display = 'none'} />
-                        </button>
-                      ))}
+                <fieldset className="space-y-3 rounded-xl border border-slate-200 bg-white px-3 pb-3">
+                  <legend className="px-1 text-sm font-semibold text-slate-800">ขนาดโลโก้บนสติกเกอร์</legend>
+                  {[
+                    { id: 'film-brand-logo-size', label: 'โลโก้แบรนด์ (ซ้าย)', name: 'brandLogoSize' },
+                    { id: 'film-warranty-logo-size', label: 'ตรารับประกัน (ขวา)', name: 'warrantyLogoSize' },
+                  ].map(({ id, label, name }) => (
+                    <div key={id} className="grid grid-cols-[minmax(0,1fr)_4rem] items-center gap-x-3 gap-y-1">
+                      <label htmlFor={id} className="text-xs font-medium text-slate-700">{label}</label>
+                      <output htmlFor={id} className="row-span-2 text-right text-xs font-semibold tabular-nums text-slate-600">{filmPrintPreferences[name]}%</output>
+                      <input
+                        id={id}
+                        type="range"
+                        min={filmPrintRanges[name].min}
+                        max={filmPrintRanges[name].max}
+                        step={filmPrintRanges[name].step}
+                        value={filmPrintPreferences[name]}
+                        onChange={(event) => updateFilmPrintPreference(name, event.target.valueAsNumber)}
+                        className="w-full accent-blue-600"
+                      />
                     </div>
-                  ) : (
-                    <div className="text-xs text-center text-slate-400 py-4">
-                      ไม่มีไฟล์เทมเพลต<br/>นำรูปภาพไปวางในโฟลเดอร์<br/><code className="bg-slate-100 px-1 py-0.5 rounded text-slate-500 mt-1 inline-block">src/assets/film-logos</code>
-                    </div>
-                  )}
-                </div>
-              </section>
+                  ))}
+                </fieldset>
+              </SidebarDisclosure>
 
-              <section className={showFilmSettings ? 'space-y-3' : 'hidden'}>
-                <h2 className="flex items-center justify-between text-sm font-semibold uppercase tracking-wider text-slate-400">
-                  <span className="flex items-center"><ImageIcon size={16} className="mr-2" /> ตรารับประกัน (ขวา)</span>
-                  {filmLogo2 && <button type="button" onClick={() => updateFilmDraft('warrantyLogo', null)} className="text-xs font-medium normal-case text-red-500 hover:text-red-600">นำออก</button>}
-                </h2>
-                
-                <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
-                  {predefinedWarranties.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
-                      {predefinedWarranties.map((tpl) => (
-                        <button
-                          key={tpl.id}
-                          onClick={() => updateFilmDraft('warrantyLogo', tpl.url)}
-                          title={tpl.name}
-                          className={`flex-shrink-0 w-12 h-12 border-2 rounded-lg overflow-hidden transition-all bg-white ${
-                            filmLogo2 === tpl.url ? 'border-blue-600 shadow-md scale-105' : 'border-slate-200 hover:border-slate-300'
-                          }`}
-                        >
-                          <img src={tpl.url} alt={tpl.name} className="w-full h-full object-contain p-0.5" onError={(e) => e.target.style.display = 'none'} />
-                        </button>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-xs text-center text-slate-400 py-4">
-                      ไม่มีไฟล์เทมเพลต<br/>นำรูปภาพไปวางในโฟลเดอร์<br/><code className="bg-slate-100 px-1 py-0.5 rounded text-slate-500 mt-1 inline-block">src/assets/film-warranties</code>
-                    </div>
-                  )}
-                </div>
-              </section>
+              <SidebarDisclosure title="สเปคฟิล์มและตรารับประกัน" icon={FileText}>
+                <section className="rounded-xl border border-amber-200 bg-amber-50/70 p-3">
+                  <h2 className="flex items-center justify-between gap-2 text-sm font-bold text-amber-900">
+                    <span className="flex items-center">
+                      <Settings size={16} className="mr-2 text-amber-600" /> ค่าสเปค (%)
+                    </span>
+                  </h2>
+                    <p className="text-[11px] text-amber-700 leading-snug mt-3 font-medium">
+                      ⚠️ ตรวจสอบและแก้ไขค่าให้ตรงรุ่นก่อนพิมพ์
+                    </p>
+                  <div className="space-y-2 mt-2">
+                    {filmSpecs.map((spec, idx) => (
+                      <div key={idx} className={`flex items-center justify-between space-x-2 transition-opacity ${spec.visible === false ? 'opacity-50' : 'opacity-100'}`}>
+                        <div className="flex items-center space-x-2 flex-1 min-w-0">
+                          <input type="checkbox" checked={spec.visible !== false} onChange={(e) => handleSpecToggle(idx, e.target.checked)} className="w-3.5 h-3.5 shrink-0 text-amber-600 rounded border-amber-300 focus:ring-amber-500 cursor-pointer" />
+                          <label className={`text-xs font-medium whitespace-normal break-words leading-snug cursor-pointer ${spec.visible === false ? 'text-slate-500 line-through' : 'text-amber-900'}`} title={spec.label} onClick={() => handleSpecToggle(idx, spec.visible === false)}>{spec.label}</label>
+                        </div>
+                        <div className={`flex items-center w-[110px] shrink-0 bg-white rounded shadow-sm border focus-within:ring-2 focus-within:ring-amber-500 ${spec.visible === false ? 'border-slate-200' : 'border-amber-200'}`}>
+                          <input type="text" value={spec.value} onChange={(e) => handleSpecChange(idx, e.target.value)} disabled={spec.visible === false} className="w-full px-2 py-1 text-sm text-right outline-none bg-transparent font-semibold text-slate-800 disabled:text-slate-500" />
+                          <span className={`text-xs font-bold pr-2 ${spec.visible === false ? 'text-slate-400' : 'text-amber-600'}`}>{specSuffix(spec)}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+
+                <section className="space-y-3">
+                  <h2 className="flex items-center justify-between text-sm font-semibold uppercase tracking-wider text-slate-400">
+                    <span className="flex items-center"><ImageIcon size={16} className="mr-2" /> โลโก้แบรนด์ (ซ้าย)</span>
+                    {filmLogo1 && <button type="button" onClick={() => updateFilmDraft('brandLogo', null)} className="text-xs font-medium normal-case text-red-500 hover:text-red-600">นำออก</button>}
+                  </h2>
+
+                  <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+                    {predefinedLogos.length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {predefinedLogos.map((tpl) => (
+                          <button
+                            key={tpl.id}
+                            onClick={() => updateFilmDraft('brandLogo', tpl.url)}
+                            title={tpl.name}
+                            className={`flex-shrink-0 w-16 h-10 border-2 rounded-lg overflow-hidden transition-all bg-white ${
+                              filmLogo1 === tpl.url ? 'border-blue-600 shadow-md scale-105' : 'border-slate-200 hover:border-slate-300'
+                            }`}
+                          >
+                            <img src={tpl.url} alt={tpl.name} className="w-full h-full object-contain p-0.5" onError={(e) => e.target.style.display = 'none'} />
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-xs text-center text-slate-400 py-4">
+                        ไม่มีไฟล์เทมเพลต<br/>นำรูปภาพไปวางในโฟลเดอร์<br/><code className="bg-slate-100 px-1 py-0.5 rounded text-slate-500 mt-1 inline-block">src/assets/film-logos</code>
+                      </div>
+                    )}
+                  </div>
+                </section>
+
+                <section className="space-y-3">
+                  <h2 className="flex items-center justify-between text-sm font-semibold uppercase tracking-wider text-slate-400">
+                    <span className="flex items-center"><ImageIcon size={16} className="mr-2" /> ตรารับประกัน (ขวา)</span>
+                    {filmLogo2 && <button type="button" onClick={() => updateFilmDraft('warrantyLogo', null)} className="text-xs font-medium normal-case text-red-500 hover:text-red-600">นำออก</button>}
+                  </h2>
+
+                  <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+                    {predefinedWarranties.length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {predefinedWarranties.map((tpl) => (
+                          <button
+                            key={tpl.id}
+                            onClick={() => updateFilmDraft('warrantyLogo', tpl.url)}
+                            title={tpl.name}
+                            className={`flex-shrink-0 w-12 h-12 border-2 rounded-lg overflow-hidden transition-all bg-white ${
+                              filmLogo2 === tpl.url ? 'border-blue-600 shadow-md scale-105' : 'border-slate-200 hover:border-slate-300'
+                            }`}
+                          >
+                            <img src={tpl.url} alt={tpl.name} className="w-full h-full object-contain p-0.5" onError={(e) => e.target.style.display = 'none'} />
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-xs text-center text-slate-400 py-4">
+                        ไม่มีไฟล์เทมเพลต<br/>นำรูปภาพไปวางในโฟลเดอร์<br/><code className="bg-slate-100 px-1 py-0.5 rounded text-slate-500 mt-1 inline-block">src/assets/film-warranties</code>
+                      </div>
+                    )}
+                  </div>
+                </section>
+              </SidebarDisclosure>
+
+              <SidebarDisclosure title="จัดหน้ากระดาษ" icon={LayoutGrid} value={`${gridCols} × ${gridRows}`}>
+                {printPaperFields}
+              </SidebarDisclosure>
             </>
           )}
 
@@ -995,80 +1081,12 @@ export default function App() {
             </div>
           )}
 
-          {/* Common Layout Settings */}
-          <details
-            className={mode === 'film' && !showFilmSettings ? 'hidden' : 'group pt-4 border-t border-slate-100'}
-            open={mode === 'film' ? showFilmSettings : undefined}
-            onToggle={(event) => {
-              if (mode === 'film' && event.currentTarget.open !== showFilmSettings) {
-                setShowFilmSettings(event.currentTarget.open);
-              }
-            }}
-          >
-            <summary className="flex cursor-pointer list-none items-center justify-between rounded text-sm font-semibold uppercase tracking-wider text-slate-400 focus-visible:outline-2 focus-visible:outline-blue-500 [&::-webkit-details-marker]:hidden">
-              <span className="flex items-center"><Settings size={16} className="mr-2" /> การตั้งค่าการพิมพ์</span>
-              <ChevronDown size={16} className="transition-transform group-open:rotate-180" />
-            </summary>
-            <div className="mt-4 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="print-layout-quantity" className="block text-sm font-medium text-slate-700 mb-1 flex items-center">
-                  <Hash size={14} className="mr-1 text-slate-400" /> {mode === 'coupon' ? 'จำนวนแผ่น (แผ่นละ 6 ใบ)' : 'จำนวนดวง'}
-                </label>
-                <input
-                  {...printLayoutInput('quantity', mode === 'coupon' ? {
-                    max: filmPrintRanges.quantity.max / 6,
-                    value: Math.ceil(quantity / 6),
-                    multiplier: 6,
-                  } : undefined)}
-                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                />
-              </div>
-              <div>
-                <label htmlFor="print-layout-startPos" className="block text-sm font-medium text-slate-700 mb-1 flex items-center" title="เริ่มพิมพ์จากช่องที่ N">
-                  <ArrowRight size={14} className="mr-1 text-slate-400" /> เริ่มตำแหน่งที่
-                </label>
-                <input {...printLayoutInput('startPos', { max: totalSlots, value: startPos })} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
-              </div>
-              </div>
-            
-              {mode !== 'business-card' && mode !== 'coupon' && (
-                <>
-                  <div className="grid grid-cols-2 gap-4 mt-2">
-                  <div>
-                    <label htmlFor="print-layout-gridCols" className="block text-sm font-medium text-slate-700 mb-1">จำนวนคอลัมน์ (แนวนอน)</label>
-                    <input {...printLayoutInput('gridCols')} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
-                  </div>
-                  <div>
-                    <label htmlFor="print-layout-gridRows" className="block text-sm font-medium text-slate-700 mb-1">จำนวนแถว (แนวตั้ง)</label>
-                    <input {...printLayoutInput('gridRows')} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
-                  </div>
-                  </div>
-                  <div className="pt-2 border-t border-slate-100 mt-3">
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">ระยะขอบแต่ละดวง (Padding)</label>
-                  <div className="grid grid-cols-4 gap-2">
-                    <div>
-                      <label htmlFor="print-layout-piecePaddingTop" className="block text-[10px] text-slate-500 mb-1 text-center">บน (Top)</label>
-                      <input {...printLayoutInput('piecePaddingTop')} className="w-full px-2 py-1.5 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 outline-none text-xs text-center font-medium" />
-                    </div>
-                    <div>
-                      <label htmlFor="print-layout-piecePaddingBottom" className="block text-[10px] text-slate-500 mb-1 text-center">ล่าง (Bottom)</label>
-                      <input {...printLayoutInput('piecePaddingBottom')} className="w-full px-2 py-1.5 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 outline-none text-xs text-center font-medium" />
-                    </div>
-                    <div>
-                      <label htmlFor="print-layout-piecePaddingLeft" className="block text-[10px] text-slate-500 mb-1 text-center">ซ้าย (Left)</label>
-                      <input {...printLayoutInput('piecePaddingLeft')} className="w-full px-2 py-1.5 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 outline-none text-xs text-center font-medium" />
-                    </div>
-                    <div>
-                      <label htmlFor="print-layout-piecePaddingRight" className="block text-[10px] text-slate-500 mb-1 text-center">ขวา (Right)</label>
-                      <input {...printLayoutInput('piecePaddingRight')} className="w-full px-2 py-1.5 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 outline-none text-xs text-center font-medium" />
-                    </div>
-                  </div>
-                  </div>
-                </>
-              )}
-            </div>
-          </details>
+          {mode !== 'film' && (
+            <SidebarDisclosure title="การตั้งค่าการพิมพ์" icon={Settings}>
+              {printQuantityFields}
+              {mode === 'general' && printPaperFields}
+            </SidebarDisclosure>
+          )}
 
           {mode === 'film' && (
             <a
@@ -1088,25 +1106,32 @@ export default function App() {
         </div>
 
         {/* Action Buttons */}
-        <div className="p-6 border-t border-slate-100 bg-white flex flex-col space-y-3">
-          <button onClick={handlePrint} className={`w-full text-white font-semibold py-3 px-4 rounded-xl flex items-center justify-center space-x-2 transition-all shadow-md ${mode === 'film' ? 'bg-slate-800 hover:bg-slate-900 shadow-slate-300' : mode === 'coupon' ? 'bg-red-600 hover:bg-red-700 shadow-red-200' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-200'}`}>
-            <Printer size={20} />
-            <span>สั่งพิมพ์ (Print)</span>
-          </button>
-          
-          <button onClick={handleSavePDF} disabled={isGeneratingPDF} className="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold py-3 px-4 rounded-xl flex items-center justify-center space-x-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-            {isGeneratingPDF ? <Loader2 className="animate-spin text-slate-500" size={20} /> : <Download size={20} className="text-slate-500" />}
-            <span>{isGeneratingPDF ? 'กำลังสร้าง PDF...' : 'บันทึก PDF'}</span>
-          </button>
+        <div className="shrink-0 space-y-2 border-t border-slate-200 bg-white px-4 py-3">
+          {mode === 'film' && (
+            <div className="flex items-center justify-between gap-2 text-sm">
+              <span className="font-semibold text-slate-900">3. ตรวจตัวอย่างแล้วพิมพ์</span>
+              <span className="shrink-0 text-xs font-medium tabular-nums text-slate-600">{quantity} ดวง · {totalPages} แผ่น</span>
+            </div>
+          )}
+          <div className="grid grid-cols-2 gap-2">
+            <button onClick={handlePrint} className={`w-full text-white font-semibold py-3 px-4 rounded-xl flex items-center justify-center space-x-2 transition-all shadow-md ${mode === 'film' ? 'bg-slate-800 hover:bg-slate-900 shadow-slate-300' : mode === 'coupon' ? 'bg-red-600 hover:bg-red-700 shadow-red-200' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-200'}`}>
+              <Printer size={20} />
+              <span>สั่งพิมพ์</span>
+            </button>
 
-          <p className="text-xs text-slate-400 mt-2 text-center">
-            * สั่งพิมพ์จริง: ตั้งค่ากระดาษ A4 / Margin: None
+            <button onClick={handleSavePDF} disabled={isGeneratingPDF} className="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold py-3 px-4 rounded-xl flex items-center justify-center space-x-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+              {isGeneratingPDF ? <Loader2 className="animate-spin text-slate-500" size={20} /> : <Download size={20} className="text-slate-500" />}
+              <span>{isGeneratingPDF ? 'กำลังสร้าง PDF...' : 'บันทึก PDF'}</span>
+            </button>
+          </div>
+          <p className="text-center text-xs text-slate-600">
+            ตั้งเครื่องพิมพ์เป็น A4 และเลือกไม่มีระยะขอบ
           </p>
         </div>
       </aside>
 
       {/* Main Preview Area */}
-      <main className="flex-1 p-4 md:p-8 overflow-auto flex flex-col items-center bg-slate-100 print:p-0 print:bg-white print:overflow-visible space-y-8 print:space-y-0 print:block">
+      <main className="min-w-0 flex-1 p-4 md:p-8 overflow-auto flex flex-col items-start xl:items-center bg-slate-100 print:p-0 print:bg-white print:overflow-visible space-y-8 print:space-y-0 print:block">
         
         {pagesArray.map((pageIndex) => {
           const pageStartSlot = pageIndex * totalSlots + 1;
@@ -1229,41 +1254,41 @@ export default function App() {
                             ref={slotNum === Math.max(1, Math.ceil(startPos)) ? filmPrintPreviewRef : null}
                             className="min-w-0 flex-1 flex flex-col justify-start"
                           >
-                            {/* Top Header Logos */}
-                            <div className="relative z-10 flex justify-between items-start">
-                              {/* Main Logo Container */}
-                              <div className="flex max-w-[75%] items-start justify-start" style={{ width: `${32 * filmBrandLogoSize / 100}mm` }}>
-                                {filmLogo1 && (
-                                  <img src={filmLogo1} className="max-w-full object-contain object-left-top" style={{ maxHeight: `${12.5 * filmBrandLogoSize / 100}mm` }} alt="Logo" />
-                                )}
-                              </div>
-                              {/* Warranty Badge Container */}
-                              <div className="flex max-w-[25%] items-start justify-end" style={{ width: `${9 * filmWarrantyLogoSize / 100}mm` }}>
-                                {filmLogo2 && (
-                                  <img src={filmLogo2} className="max-w-full object-contain object-right-top" style={{ maxHeight: `${8 * filmWarrantyLogoSize / 100}mm` }} alt="Warranty" />
-                                )}
-                              </div>
+                          {/* Top Header Logos */}
+                          <div className="relative z-10 flex justify-between items-start">
+                            {/* Main Logo Container */}
+                            <div className="flex max-w-[75%] items-start justify-start" style={{ width: `${32 * filmBrandLogoSize / 100}mm` }}>
+                              {filmLogo1 && (
+                                <img src={filmLogo1} className="max-w-full object-contain object-left-top" style={{ maxHeight: `${12.5 * filmBrandLogoSize / 100}mm` }} alt="Logo" />
+                              )}
                             </div>
+                            {/* Warranty Badge Container */}
+                            <div className="flex max-w-[25%] items-start justify-end" style={{ width: `${9 * filmWarrantyLogoSize / 100}mm` }}>
+                              {filmLogo2 && (
+                                <img src={filmLogo2} className="max-w-full object-contain object-right-top" style={{ maxHeight: `${8 * filmWarrantyLogoSize / 100}mm` }} alt="Warranty" />
+                              )}
+                            </div>
+                          </div>
 
-                            {/* Film Series Title */}
-                            <div className="relative z-10 flex items-baseline w-full">
-                              <span style={{ fontSize: `${filmSeriesSize}px` }} className="font-bold leading-tight text-black whitespace-nowrap tracking-tight">{filmSeries}</span>
-                              <div className="flex-grow border-b border-dotted border-slate-600 mx-1 mb-[2px]"></div>
-                              <span style={{ fontSize: `${filmModelSize}px` }} className="font-bold leading-tight text-black whitespace-nowrap">{filmModel}</span>
-                            </div>
+                          {/* Film Series Title */}
+                          <div className="relative z-10 flex items-baseline w-full">
+                            <span style={{ fontSize: `${filmSeriesSize}px` }} className="font-bold leading-tight text-black whitespace-nowrap tracking-tight">{filmSeries}</span>
+                            <div className="flex-grow border-b border-dotted border-slate-600 mx-1 mb-[2px]"></div>
+                            <span style={{ fontSize: `${filmModelSize}px` }} className="font-bold leading-tight text-black whitespace-nowrap">{filmModel}</span>
+                          </div>
 
-                            {/* Spec Rows */}
-                            <div className="relative z-10 flex flex-col mt-[1mm] w-full" style={{ fontSize: `${filmSpecSize}px`, rowGap: filmSpecSize > 8 ? '0.4mm' : '0.8mm' }}>
-                              {filmSpecs.filter(s => s.visible !== false && s.value && s.value.trim() !== '' && s.value.trim() !== '00').map((spec, i) => (
-                                <div key={i} className="flex items-baseline w-full">
-                                  <span className="min-w-0 break-words font-medium leading-none text-black tracking-tight">{spec.label}</span>
-                                  <div className="flex-grow border-b border-dotted border-slate-500 mx-1 mb-[1.5px]"></div>
-                                  <span className="shrink-0 leading-none font-medium text-black whitespace-nowrap">
-                                    {spec.value}{specSuffix(spec)}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
+                          {/* Spec Rows */}
+                          <div className="relative z-10 flex flex-col mt-[1mm] w-full" style={{ fontSize: `${filmSpecSize}px`, rowGap: filmSpecSize > 8 ? '0.4mm' : '0.8mm' }}>
+                            {filmSpecs.filter(s => s.visible !== false && s.value && s.value.trim() !== '' && s.value.trim() !== '00').map((spec, i) => (
+                              <div key={i} className="flex items-baseline w-full">
+                                <span className="min-w-0 break-words font-medium leading-none text-black tracking-tight">{spec.label}</span>
+                                <div className="flex-grow border-b border-dotted border-slate-500 mx-1 mb-[1.5px]"></div>
+                                <span className="shrink-0 leading-none font-medium text-black whitespace-nowrap">
+                                  {spec.value}{specSuffix(spec)}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
                           </div>
                         </div>
                       )}
