@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Settings, Image as ImageIcon, Type, Move, Printer, Download, LayoutGrid, FileText, CreditCard, Ticket, Plus, Trash2, ArrowRight, Hash, Database, Search, ChevronDown, Loader2, TableProperties } from 'lucide-react';
 import Papa from 'papaparse';
 import { toPng } from 'html-to-image';
@@ -76,6 +76,23 @@ function matchingWarrantyBadge(film) {
   return predefinedWarranties.find((badge) => assetKey(badge.name) === expectedKey)?.url || null;
 }
 
+function isDefaultFilm({ brand, model }) {
+  return brand === 'NANOTECH' && model === 'PX70';
+}
+
+const defaultFilm = filmDatabase.find(isDefaultFilm);
+
+function createFilmDraft(film) {
+  return {
+    brand: film.brand,
+    series: film.series,
+    model: film.model,
+    specs: displaySpecs(film.specs),
+    brandLogo: matchingFilmLogo(film),
+    warrantyLogo: matchingWarrantyBadge(film),
+  };
+}
+
 export default function App() {
   const { notify } = useDialog();
   const { isUnlocked: isFilmEditUnlocked, canEdit: canEditFilmDatabase } = useFilmEditAccess();
@@ -90,23 +107,7 @@ export default function App() {
   const [textY, setTextY] = useState(59); // percentage
   
   // Film Mode State
-  const [filmBrand, setFilmBrand] = useState('');
-  const [filmSeries, setFilmSeries] = useState('');
-  const [filmModel, setFilmModel] = useState('');
-  const [filmSpecs, setFilmSpecs] = useState([
-    { label: 'Solar Heat Gain Coefficient (SHGC)', value: '' },
-    { label: 'Nominal Thickness', value: '' },
-    { label: 'Infrared Rejected (IRR)', value: '' },
-    { label: 'UV Rejection (UVR)', value: '' },
-    { label: 'Total Solar Energy Rejected (T-SER)', value: '' },
-    { label: 'Visible Light Transmittance (VLT)', value: '' },
-    { label: 'Visible light reflectance (INT)', value: '' },
-    { label: 'Visible light reflectance (EXT)', value: '' },
-    { label: 'Construction', value: '' }
-  ]);
-  
-  const [filmLogo1, setFilmLogo1] = useState(null);
-  const [filmLogo2, setFilmLogo2] = useState(null);
+  const [filmDraft, setFilmDraft] = useState(null);
   const [filmPrintPreferences, setFilmPrintPreferences] = useState(readFilmPrintPreferences);
   const {
     seriesSize: filmSeriesSize,
@@ -175,6 +176,16 @@ export default function App() {
     }
     return filmDatabase;
   });
+  const catalogDefaultFilm = customDatabase.find(isDefaultFilm) ?? defaultFilm;
+  const initialFilmDraft = useMemo(() => createFilmDraft(catalogDefaultFilm), [catalogDefaultFilm]);
+  const {
+    brand: filmBrand,
+    series: filmSeries,
+    model: filmModel,
+    specs: filmSpecs,
+    brandLogo: filmLogo1,
+    warrantyLogo: filmLogo2,
+  } = filmDraft ?? initialFilmDraft;
   const [databaseEdited] = useState(() => {
     try {
       return localStorage.getItem('filmDatabaseEdited') === 'true';
@@ -328,6 +339,10 @@ export default function App() {
   }, [isFilmListPage, mode, startPos, quantity, filmSeries, filmModel, filmSeriesSize, filmModelSize, filmSpecSize, filmSpecs, gridCols, gridRows, piecePaddingTop, piecePaddingBottom, piecePaddingLeft, piecePaddingRight, companyLogoId, filmCompanyLogoLength, filmLogo1, filmLogo2]);
 
   // Handlers
+  const updateFilmDraft = (field, value) => {
+    setFilmDraft((draft) => ({ ...(draft ?? initialFilmDraft), [field]: value }));
+  };
+
   const updateFilmPrintPreference = (name, value) => {
     setFilmPrintPreferences((preferences) => ({ ...preferences, [name]: value }));
     saveFilmPrintPreference(name, value);
@@ -344,14 +359,14 @@ export default function App() {
 
   const handleSpecChange = (index, newValue) => {
     const newSpecs = [...filmSpecs];
-    newSpecs[index].value = newValue;
-    setFilmSpecs(newSpecs);
+    newSpecs[index] = { ...newSpecs[index], value: newValue };
+    updateFilmDraft('specs', newSpecs);
   };
 
   const handleSpecToggle = (index, isVisible) => {
     const newSpecs = [...filmSpecs];
-    newSpecs[index].visible = isVisible;
-    setFilmSpecs(newSpecs);
+    newSpecs[index] = { ...newSpecs[index], visible: isVisible };
+    updateFilmDraft('specs', newSpecs);
   };
 
   const handlePrint = () => {
@@ -634,12 +649,7 @@ export default function App() {
                                 key={i}
                                 className="px-3 py-2 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-700 rounded cursor-pointer border-b border-slate-50 last:border-0"
                                 onClick={() => {
-                                  setFilmBrand(f.brand);
-                                  setFilmSeries(f.series);
-                                  setFilmModel(f.model);
-                                  setFilmSpecs(displaySpecs(f.specs));
-                                  setFilmLogo1(matchingFilmLogo(f));
-                                  setFilmLogo2(matchingWarrantyBadge(f));
+                                  setFilmDraft(createFilmDraft(f));
                                   setIsDropdownOpen(false);
                                   setDropdownSearch('');
                                 }}
@@ -660,11 +670,11 @@ export default function App() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="block text-xs font-medium text-slate-700">ชื่อซีรีส์ (ซ้าย)</label>
-                    <input type="text" value={filmSeries} onChange={(e) => setFilmSeries(e.target.value)} className="w-full px-3 py-1.5 text-sm border border-slate-300 rounded focus:ring-2 focus:ring-slate-800 outline-none" />
+                    <input type="text" value={filmSeries} onChange={(e) => updateFilmDraft('series', e.target.value)} className="w-full px-3 py-1.5 text-sm border border-slate-300 rounded focus:ring-2 focus:ring-slate-800 outline-none" />
                   </div>
                   <div className="space-y-2">
                     <label className="block text-xs font-medium text-slate-700">รุ่น (ขวา)</label>
-                    <input type="text" value={filmModel} onChange={(e) => setFilmModel(e.target.value)} className="w-full px-3 py-1.5 text-sm border border-slate-300 rounded focus:ring-2 focus:ring-slate-800 outline-none" />
+                    <input type="text" value={filmModel} onChange={(e) => updateFilmDraft('model', e.target.value)} className="w-full px-3 py-1.5 text-sm border border-slate-300 rounded focus:ring-2 focus:ring-slate-800 outline-none" />
                   </div>
                 </div>
               </div>
@@ -797,7 +807,7 @@ export default function App() {
               <section className={showFilmSettings ? 'space-y-3' : 'hidden'}>
                 <h2 className="flex items-center justify-between text-sm font-semibold uppercase tracking-wider text-slate-400">
                   <span className="flex items-center"><ImageIcon size={16} className="mr-2" /> โลโก้แบรนด์ (ซ้าย)</span>
-                  {filmLogo1 && <button type="button" onClick={() => setFilmLogo1(null)} className="text-xs font-medium normal-case text-red-500 hover:text-red-600">นำออก</button>}
+                  {filmLogo1 && <button type="button" onClick={() => updateFilmDraft('brandLogo', null)} className="text-xs font-medium normal-case text-red-500 hover:text-red-600">นำออก</button>}
                 </h2>
                 
                 <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
@@ -806,7 +816,7 @@ export default function App() {
                       {predefinedLogos.map((tpl) => (
                         <button
                           key={tpl.id}
-                          onClick={() => setFilmLogo1(tpl.url)}
+                          onClick={() => updateFilmDraft('brandLogo', tpl.url)}
                           title={tpl.name}
                           className={`flex-shrink-0 w-16 h-10 border-2 rounded-lg overflow-hidden transition-all bg-white ${
                             filmLogo1 === tpl.url ? 'border-blue-600 shadow-md scale-105' : 'border-slate-200 hover:border-slate-300'
@@ -827,7 +837,7 @@ export default function App() {
               <section className={showFilmSettings ? 'space-y-3' : 'hidden'}>
                 <h2 className="flex items-center justify-between text-sm font-semibold uppercase tracking-wider text-slate-400">
                   <span className="flex items-center"><ImageIcon size={16} className="mr-2" /> ตรารับประกัน (ขวา)</span>
-                  {filmLogo2 && <button type="button" onClick={() => setFilmLogo2(null)} className="text-xs font-medium normal-case text-red-500 hover:text-red-600">นำออก</button>}
+                  {filmLogo2 && <button type="button" onClick={() => updateFilmDraft('warrantyLogo', null)} className="text-xs font-medium normal-case text-red-500 hover:text-red-600">นำออก</button>}
                 </h2>
                 
                 <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
@@ -836,7 +846,7 @@ export default function App() {
                       {predefinedWarranties.map((tpl) => (
                         <button
                           key={tpl.id}
-                          onClick={() => setFilmLogo2(tpl.url)}
+                          onClick={() => updateFilmDraft('warrantyLogo', tpl.url)}
                           title={tpl.name}
                           className={`flex-shrink-0 w-12 h-12 border-2 rounded-lg overflow-hidden transition-all bg-white ${
                             filmLogo2 === tpl.url ? 'border-blue-600 shadow-md scale-105' : 'border-slate-200 hover:border-slate-300'

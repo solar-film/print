@@ -5,7 +5,15 @@ export const filmDatabase = withCatalogAdditions([
     "brand": "NANOTECH",
     "series": "PRO MAX",
     "model": "PX70",
-    "specs": { "vlt": "65.0", "irr": "99.5", "uvr": "99.4" }
+    "warranty": "10",
+    "specs": {
+      "Infrared Rejected (IRR)": "99.3%",
+      "UV Rejection (UVR)": "99.9%",
+      "Visible Light Transmittance (VLT)": "63.9%",
+      "Visible Light Reflected (EXT)": "9.5%",
+      "Total Solar Energy Rejected (TSER)": "56.4%",
+      "Thickness": "1.5 mil"
+    }
   },
   {
     "brand": "NANOTECH",
