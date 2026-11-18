@@ -636,10 +636,7 @@ export default function App() {
                 key={index}
                 type="button"
                 className="block min-h-11 w-full rounded border-b border-slate-100 px-3 py-2 text-left text-sm text-slate-800 last:border-0 hover:bg-blue-50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-blue-600"
-                onClick={() => {
-                  setFilmDraft(createFilmDraft(film));
-                  closeFilmSettings();
-                }}
+                onClick={() => setFilmDraft(createFilmDraft(film))}
               >
                 <span className="font-semibold">{filmLabel(film) || film.series}</span>
                 {film.model && film.series && <span className="mt-0.5 block text-xs text-slate-600">{film.series}</span>}
