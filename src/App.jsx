@@ -144,6 +144,7 @@ export default function App() {
   const settingsTriggerRef = useRef(null);
   const settingsPanelRef = useRef(null);
   const settingsHeadingRef = useRef(null);
+  const filmSearchRef = useRef(null);
 
   useLayoutEffect(() => {
     const trigger = settingsTriggerRef.current;
@@ -163,7 +164,7 @@ export default function App() {
       frame = requestAnimationFrame(positionPanel);
     };
     positionPanel();
-    settingsHeadingRef.current?.focus({ preventScroll: true });
+    (filmSearchRef.current ?? settingsHeadingRef.current)?.focus({ preventScroll: true });
 
     const observer = new ResizeObserver(schedulePosition);
     observer.observe(panel);
@@ -194,6 +195,7 @@ export default function App() {
   
   // Film Mode State
   const [filmDraft, setFilmDraft] = useState(null);
+  const [filmSearch, setFilmSearch] = useState('');
   const [filmPrintPreferences, setFilmPrintPreferences] = useState(readFilmPrintPreferences);
   const {
     seriesSize: filmSeriesSize,
@@ -375,22 +377,6 @@ export default function App() {
     syncFromGoogleSheets(true);
   }, []);
 
-  // Searchable Dropdown State
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [dropdownSearch, setDropdownSearch] = useState('');
-  const dropdownRef = useRef(null);
-  const filmPickerButtonRef = useRef(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsDropdownOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
   useEffect(() => {
     try {
       localStorage.setItem('filmDatabase', JSON.stringify(customDatabase));
@@ -554,9 +540,9 @@ export default function App() {
     ? { width: '210mm', height: '297mm', paddingTop: '5mm', paddingLeft: '5mm', paddingRight: '5mm' }
     : { width: '210mm', height: '297mm', paddingTop: '8.5mm', paddingLeft: '5mm', paddingRight: '5mm' };
 
-  const dropdownQuery = dropdownSearch.trim().toLowerCase();
-  const matchingFilms = isDropdownOpen ? customDatabase.filter((film) =>
-    `${film.brand} ${film.series} ${film.model}`.toLowerCase().includes(dropdownQuery),
+  const filmQuery = filmSearch.trim().toLowerCase();
+  const matchingFilms = activeFilmSettings === 'film-picker' ? customDatabase.filter((film) =>
+    `${film.brand} ${film.series} ${film.model}`.toLowerCase().includes(filmQuery),
   ) : [];
 
   const printQuantityFields = (
@@ -619,7 +605,48 @@ export default function App() {
 
   const filmSettings = [
     {
-      id: 'paper', title: 'จัดหน้ากระดาษ', icon: LayoutGrid, value: `${gridCols} × ${gridRows}`,
+      id: 'film-picker', step: 1, title: 'เลือกรุ่นฟิล์ม', icon: Search,
+      value: filmLabel({ brand: filmBrand, model: filmModel }) || filmSeries,
+      content: (
+        <>
+          <div className="space-y-2">
+            <input
+              ref={filmSearchRef}
+              type="search"
+              aria-label="ค้นหายี่ห้อ ซีรีส์ หรือรุ่น"
+              placeholder="พิมพ์ชื่อยี่ห้อ ซีรีส์ หรือรุ่น"
+              className="min-h-11 w-full rounded-lg border border-slate-300 bg-slate-50 px-3 text-sm focus-visible:outline-2 focus-visible:outline-blue-600"
+              value={filmSearch}
+              onChange={(event) => setFilmSearch(event.target.value)}
+            />
+            <p className="text-xs leading-relaxed text-slate-600">
+              เลือกรุ่นเพื่อใส่สเปคและโลโก้ให้โดยอัตโนมัติ
+            </p>
+          </div>
+          <div className="max-h-[min(19rem,46dvh)] overflow-y-auto overscroll-contain rounded-lg border border-slate-200 p-1">
+            {matchingFilms.map((film, index) => (
+              <button
+                key={index}
+                type="button"
+                className="block min-h-11 w-full rounded border-b border-slate-100 px-3 py-2 text-left text-sm text-slate-800 last:border-0 hover:bg-blue-50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-blue-600"
+                onClick={() => {
+                  setFilmDraft(createFilmDraft(film));
+                  closeFilmSettings();
+                }}
+              >
+                <span className="font-semibold">{filmLabel(film) || film.series}</span>
+                {film.model && film.series && <span className="mt-0.5 block text-xs text-slate-600">{film.series}</span>}
+              </button>
+            ))}
+            {matchingFilms.length === 0 && (
+              <p role="status" className="px-3 py-4 text-sm text-slate-600">ไม่พบรุ่น ลองค้นหาด้วยชื่อยี่ห้อ</p>
+            )}
+          </div>
+        </>
+      ),
+    },
+    {
+      id: 'paper', step: 2, title: 'จัดหน้ากระดาษ', icon: LayoutGrid, value: `${gridCols} × ${gridRows}`,
       content: (
         <>
           <div className="space-y-2 border-b border-slate-200 pb-4">
@@ -897,7 +924,6 @@ export default function App() {
               onClick={() => {
                 setMode(id);
                 setActiveFilmSettings(null);
-                setIsDropdownOpen(false);
               }}
               className={`flex min-h-12 flex-col items-center justify-center gap-1 rounded-lg px-1 py-1.5 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-blue-600 ${mode === id ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-200'}`}
             >
@@ -1011,86 +1037,8 @@ export default function App() {
 
           {mode === 'film' && (
             <>
-              <section aria-labelledby="film-pick-title" className="rounded-2xl border border-blue-200 bg-blue-50/70 p-3.5">
-                <h2 id="film-pick-title" className="mb-3 flex items-center gap-2 text-base font-bold text-slate-900">
-                  <span aria-hidden="true" className="grid size-6 shrink-0 place-items-center rounded-full bg-blue-600 text-xs text-white">1</span>
-                  เลือกรุ่นฟิล์ม
-                </h2>
-                <div
-                  className="relative"
-                  ref={dropdownRef}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Escape' && isDropdownOpen) {
-                      setIsDropdownOpen(false);
-                      filmPickerButtonRef.current?.focus();
-                    }
-                  }}
-                >
-                  <button
-                    ref={filmPickerButtonRef}
-                    type="button"
-                    aria-expanded={isDropdownOpen}
-                    aria-controls={isDropdownOpen ? 'film-picker-options' : undefined}
-                    className="flex min-h-12 w-full items-center gap-2 rounded-xl border border-blue-200 bg-white px-3 py-2 text-left text-sm text-slate-900 shadow-sm hover:border-blue-500 focus-visible:outline-2 focus-visible:outline-blue-600"
-                    onClick={() => setIsDropdownOpen((open) => !open)}
-                  >
-                    <Search size={17} className="shrink-0 text-blue-600" aria-hidden="true" />
-                    <span className="min-w-0 flex-1 break-words font-semibold">
-                      {filmLabel({ brand: filmBrand, model: filmModel }) || filmSeries || 'ค้นหายี่ห้อหรือรุ่น'}
-                    </span>
-                    <ChevronDown size={16} className={`shrink-0 text-slate-500 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
-                  </button>
-
-                  {isDropdownOpen && (
-                    <div id="film-picker-options" className="mt-2 flex max-h-60 flex-col overflow-hidden rounded-lg border border-blue-200 bg-white shadow-sm">
-                      <div className="border-b border-slate-200 p-2">
-                        <input
-                          type="search"
-                          autoFocus
-                          aria-label="ค้นหายี่ห้อ ซีรีส์ หรือรุ่น"
-                          placeholder="พิมพ์ชื่อยี่ห้อ ซีรีส์ หรือรุ่น"
-                          className="min-h-10 w-full rounded bg-slate-50 px-2 text-sm focus-visible:outline-2 focus-visible:outline-blue-600"
-                          value={dropdownSearch}
-                          onChange={(event) => setDropdownSearch(event.target.value)}
-                        />
-                      </div>
-                      <div className="min-h-0 flex-1 overflow-y-auto p-1">
-                        {matchingFilms.map((film, index) => (
-                          <button
-                            key={index}
-                            type="button"
-                            className="block min-h-11 w-full rounded border-b border-slate-100 px-3 py-2 text-left text-sm text-slate-800 last:border-0 hover:bg-blue-50 focus-visible:outline-2 focus-visible:outline-blue-600"
-                            onClick={() => {
-                              setFilmDraft(createFilmDraft(film));
-                              setIsDropdownOpen(false);
-                              setDropdownSearch('');
-                              filmPickerButtonRef.current?.focus();
-                            }}
-                          >
-                            <span className="font-semibold">{filmLabel(film) || film.series}</span>
-                            {film.model && film.series && <span className="mt-0.5 block text-xs text-slate-600">{film.series}</span>}
-                          </button>
-                        ))}
-                        {matchingFilms.length === 0 && (
-                          <p role="status" className="px-3 py-4 text-sm text-slate-600">ไม่พบรุ่น ลองค้นหาด้วยชื่อยี่ห้อ</p>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-                <p className="mt-2 text-xs leading-relaxed text-slate-600">
-                  เลือกรุ่นเพื่อใส่สเปคและโลโก้ให้โดยอัตโนมัติ
-                </p>
-              </section>
-
-              {filmPrintOverflows && (
-                <p role="status" className="rounded-lg bg-amber-50 px-2.5 py-2 text-xs leading-snug text-amber-900">
-                  เนื้อหาล้นขอบสติกเกอร์ ลองลดขนาดโลโก้หรือตัวอักษร หรือปรับจำนวนแถวและคอลัมน์ก่อนพิมพ์
-                </p>
-              )}
-
               <nav aria-label="ตั้งค่าสติกเกอร์ฟิล์ม" className="space-y-4">
-                {filmSettings.map(({ id, title, icon: Icon, value }) => {
+                {filmSettings.map(({ id, title, icon: Icon, value, step }) => {
                   const isOpen = activeFilmSettings === id;
                   return (
                     <button
@@ -1103,23 +1051,29 @@ export default function App() {
                           closeFilmSettings();
                         } else {
                           settingsTriggerRef.current = event.currentTarget;
+                          if (id === 'film-picker') setFilmSearch('');
                           setActiveFilmSettings(id);
                         }
                       }}
                       className={`flex min-h-12 w-full cursor-pointer items-center gap-2.5 rounded-xl border px-3 py-2 text-left text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-blue-600 ${isOpen ? 'border-blue-500 bg-blue-50 text-blue-900 ring-1 ring-blue-500/20' : 'border-slate-200 bg-white text-slate-800 hover:bg-slate-50'}`}
                     >
-                      {id === 'paper' ? (
-                        <span aria-hidden="true" className="grid size-6 shrink-0 place-items-center rounded-full bg-blue-600 text-xs text-white">2</span>
+                      {step ? (
+                        <span aria-hidden="true" className="grid size-6 shrink-0 place-items-center rounded-full bg-blue-600 text-xs text-white">{step}</span>
                       ) : (
                         <Icon size={16} className="shrink-0 text-blue-600" aria-hidden="true" />
                       )}
                       <span className="flex-1">{title}</span>
-                      {value && <span className={`text-xs font-medium ${isOpen ? 'text-blue-800' : 'text-slate-600'}`}>{value}</span>}
+                      {value && <span className={`max-w-1/2 min-w-0 wrap-break-word text-right text-xs font-medium ${isOpen ? 'text-blue-800' : 'text-slate-600'}`}>{value}</span>}
                       <ChevronRight size={16} className={`shrink-0 ${isOpen ? 'text-blue-600' : 'text-slate-500'}`} aria-hidden="true" />
                     </button>
                   );
                 })}
               </nav>
+              {filmPrintOverflows && (
+                <p role="status" className="rounded-lg bg-amber-50 px-2.5 py-2 text-xs leading-snug text-amber-900">
+                  เนื้อหาล้นขอบสติกเกอร์ ลองลดขนาดโลโก้หรือตัวอักษร หรือปรับจำนวนแถวและคอลัมน์ก่อนพิมพ์
+                </p>
+              )}
             </>
           )}
 
