@@ -626,10 +626,11 @@ export default function App() {
       ),
     },
     {
-      id: 'company-logo', title: 'โลโก้บริษัทด้านหน้า', icon: ImageIcon, value: filmCompanyLogo.name,
+      id: 'company-logo', title: 'โลโก้และตรารับประกัน', icon: ImageIcon, value: filmCompanyLogo.name,
       content: (
         <>
-          <div className="grid grid-cols-2 gap-2">
+          <h3 className="text-sm font-semibold text-slate-800">โลโก้บริษัทด้านหน้า</h3>
+          <div className="grid grid-cols-3 gap-2">
             {companyLogos.map((logo) => (
               <button
                 key={logo.id}
@@ -677,6 +678,70 @@ export default function App() {
               />
             </div>
           ))}
+
+          <section aria-labelledby="film-brand-logo-title" className="space-y-3">
+            <h3 id="film-brand-logo-title" className="flex items-center justify-between gap-2 text-sm font-semibold text-slate-800">
+              <span className="flex items-center"><ImageIcon size={16} className="mr-2" /> โลโก้แบรนด์ (ซ้าย)</span>
+              {filmLogo1 && <button type="button" aria-label="นำโลโก้แบรนด์ออก" onClick={() => updateFilmDraft('brandLogo', null)} className="text-xs font-medium normal-case text-red-500 hover:text-red-600">นำออก</button>}
+            </h3>
+
+            <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+              {predefinedLogos.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {predefinedLogos.map((tpl) => (
+                    <button
+                      key={tpl.id}
+                      type="button"
+                      aria-pressed={filmLogo1 === tpl.url}
+                      onClick={() => updateFilmDraft('brandLogo', tpl.url)}
+                      title={tpl.name}
+                      className={`flex-shrink-0 w-16 h-10 border-2 rounded-lg overflow-hidden transition-all bg-white ${
+                        filmLogo1 === tpl.url ? 'border-blue-600 shadow-md scale-105' : 'border-slate-200 hover:border-slate-300'
+                      }`}
+                    >
+                      <img src={tpl.url} alt={tpl.name} className="w-full h-full object-contain p-0.5" onError={(e) => e.target.style.display = 'none'} />
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-xs text-center text-slate-400 py-4">
+                  ไม่มีไฟล์เทมเพลต<br/>นำรูปภาพไปวางในโฟลเดอร์<br/><code className="bg-slate-100 px-1 py-0.5 rounded text-slate-500 mt-1 inline-block">src/assets/film-logos</code>
+                </div>
+              )}
+            </div>
+          </section>
+
+          <section aria-labelledby="film-warranty-logo-title" className="space-y-3">
+            <h3 id="film-warranty-logo-title" className="flex items-center justify-between gap-2 text-sm font-semibold text-slate-800">
+              <span className="flex items-center"><ImageIcon size={16} className="mr-2" /> ตรารับประกัน (ขวา)</span>
+              {filmLogo2 && <button type="button" aria-label="นำตรารับประกันออก" onClick={() => updateFilmDraft('warrantyLogo', null)} className="text-xs font-medium normal-case text-red-500 hover:text-red-600">นำออก</button>}
+            </h3>
+
+            <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+              {predefinedWarranties.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {predefinedWarranties.map((tpl) => (
+                    <button
+                      key={tpl.id}
+                      type="button"
+                      aria-pressed={filmLogo2 === tpl.url}
+                      onClick={() => updateFilmDraft('warrantyLogo', tpl.url)}
+                      title={tpl.name}
+                      className={`flex-shrink-0 w-12 h-12 border-2 rounded-lg overflow-hidden transition-all bg-white ${
+                        filmLogo2 === tpl.url ? 'border-blue-600 shadow-md scale-105' : 'border-slate-200 hover:border-slate-300'
+                      }`}
+                    >
+                      <img src={tpl.url} alt={tpl.name} className="w-full h-full object-contain p-0.5" onError={(e) => e.target.style.display = 'none'} />
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-xs text-center text-slate-400 py-4">
+                  ไม่มีไฟล์เทมเพลต<br/>นำรูปภาพไปวางในโฟลเดอร์<br/><code className="bg-slate-100 px-1 py-0.5 rounded text-slate-500 mt-1 inline-block">src/assets/film-warranties</code>
+                </div>
+              )}
+            </div>
+          </section>
         </>
       ),
     },
@@ -744,7 +809,7 @@ export default function App() {
       ),
     },
     {
-      id: 'specs', title: 'สเปคฟิล์มและตรารับประกัน', icon: FileText,
+      id: 'specs', title: 'สเปคฟิล์ม', icon: FileText,
       content: (
         <>
           <section className="rounded-xl border border-amber-200 bg-amber-50/70 p-3">
@@ -769,66 +834,6 @@ export default function App() {
                   </div>
                 </div>
               ))}
-            </div>
-          </section>
-
-          <section className="space-y-3">
-            <h2 className="flex items-center justify-between text-sm font-semibold uppercase tracking-wider text-slate-400">
-              <span className="flex items-center"><ImageIcon size={16} className="mr-2" /> โลโก้แบรนด์ (ซ้าย)</span>
-              {filmLogo1 && <button type="button" onClick={() => updateFilmDraft('brandLogo', null)} className="text-xs font-medium normal-case text-red-500 hover:text-red-600">นำออก</button>}
-            </h2>
-
-            <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
-              {predefinedLogos.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {predefinedLogos.map((tpl) => (
-                    <button
-                      key={tpl.id}
-                      onClick={() => updateFilmDraft('brandLogo', tpl.url)}
-                      title={tpl.name}
-                      className={`flex-shrink-0 w-16 h-10 border-2 rounded-lg overflow-hidden transition-all bg-white ${
-                        filmLogo1 === tpl.url ? 'border-blue-600 shadow-md scale-105' : 'border-slate-200 hover:border-slate-300'
-                      }`}
-                    >
-                      <img src={tpl.url} alt={tpl.name} className="w-full h-full object-contain p-0.5" onError={(e) => e.target.style.display = 'none'} />
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-xs text-center text-slate-400 py-4">
-                  ไม่มีไฟล์เทมเพลต<br/>นำรูปภาพไปวางในโฟลเดอร์<br/><code className="bg-slate-100 px-1 py-0.5 rounded text-slate-500 mt-1 inline-block">src/assets/film-logos</code>
-                </div>
-              )}
-            </div>
-          </section>
-
-          <section className="space-y-3">
-            <h2 className="flex items-center justify-between text-sm font-semibold uppercase tracking-wider text-slate-400">
-              <span className="flex items-center"><ImageIcon size={16} className="mr-2" /> ตรารับประกัน (ขวา)</span>
-              {filmLogo2 && <button type="button" onClick={() => updateFilmDraft('warrantyLogo', null)} className="text-xs font-medium normal-case text-red-500 hover:text-red-600">นำออก</button>}
-            </h2>
-
-            <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
-              {predefinedWarranties.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {predefinedWarranties.map((tpl) => (
-                    <button
-                      key={tpl.id}
-                      onClick={() => updateFilmDraft('warrantyLogo', tpl.url)}
-                      title={tpl.name}
-                      className={`flex-shrink-0 w-12 h-12 border-2 rounded-lg overflow-hidden transition-all bg-white ${
-                        filmLogo2 === tpl.url ? 'border-blue-600 shadow-md scale-105' : 'border-slate-200 hover:border-slate-300'
-                      }`}
-                    >
-                      <img src={tpl.url} alt={tpl.name} className="w-full h-full object-contain p-0.5" onError={(e) => e.target.style.display = 'none'} />
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-xs text-center text-slate-400 py-4">
-                  ไม่มีไฟล์เทมเพลต<br/>นำรูปภาพไปวางในโฟลเดอร์<br/><code className="bg-slate-100 px-1 py-0.5 rounded text-slate-500 mt-1 inline-block">src/assets/film-warranties</code>
-                </div>
-              )}
             </div>
           </section>
         </>
