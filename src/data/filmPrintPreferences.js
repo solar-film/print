@@ -32,7 +32,7 @@ function preferenceKey(name) {
 }
 
 export function readFilmPrintPreferences() {
-  const preferences = { watermark: 'mhl' };
+  const preferences = { watermark: 'mhl', designSquarePlacement: 'side' };
   for (const [name, range] of Object.entries(filmPrintRanges)) {
     preferences[name] = range.defaultValue;
   }
@@ -40,6 +40,9 @@ export function readFilmPrintPreferences() {
   try {
     const watermark = localStorage.getItem(preferenceKey('watermark'));
     if (['none', 'gfs', 'mhl', 'borneo', 'designSquare'].includes(watermark)) preferences.watermark = watermark;
+    if (localStorage.getItem(preferenceKey('designSquarePlacement')) === 'header') {
+      preferences.designSquarePlacement = 'header';
+    }
 
     for (const [name, { min, max, step }] of Object.entries(filmPrintRanges)) {
       const saved = localStorage.getItem(preferenceKey(name));

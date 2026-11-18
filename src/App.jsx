@@ -185,7 +185,7 @@ export default function App() {
   const filmCompanyLogo = companyLogos.find((logo) => logo.id === companyLogoId);
   const companyLogoSizePreference = `${companyLogoId}LogoSize`;
   const filmCompanyLogoSize = filmPrintPreferences[companyLogoSizePreference];
-  const horizontalCompanyLogo = companyLogoId === 'designSquare';
+  const horizontalCompanyLogo = companyLogoId === 'designSquare' && filmPrintPreferences.designSquarePlacement === 'header';
   // Fit the rotated logo into its own leading column without covering the specs.
   const filmCompanyLogoLength = filmCompanyLogo.image && !horizontalCompanyLogo ? Math.max(0, Math.min(
     275 / gridRows - piecePaddingTop - piecePaddingBottom - 0.6,
@@ -598,6 +598,22 @@ export default function App() {
               </button>
             ))}
           </div>
+          {companyLogoId === 'designSquare' && (
+            <div className="space-y-1.5">
+              <label htmlFor="design-square-placement" className="block text-xs font-medium text-slate-700">
+                ตำแหน่งโลโก้ Design Square
+              </label>
+              <select
+                id="design-square-placement"
+                value={filmPrintPreferences.designSquarePlacement}
+                onChange={(event) => updateFilmPrintPreference('designSquarePlacement', event.target.value)}
+                className="min-h-10 w-full rounded-lg border border-slate-300 bg-white px-2 text-sm text-slate-800 focus-visible:outline-2 focus-visible:outline-blue-600"
+              >
+                <option value="side">ด้านซ้าย (แนวตั้ง)</option>
+                <option value="header">แถวบน (แนวนอน)</option>
+              </select>
+            </div>
+          )}
           {filmCompanyLogo.image && [
             { id: 'film-company-logo-size', label: 'ขนาดโลโก้บริษัท', name: companyLogoSizePreference },
           ].map(({ id, label, name }) => (
