@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect, useMemo } from 'react';
 import { Settings, Image as ImageIcon, Type, Move, Printer, Download, LayoutGrid, FileText, CreditCard, Ticket, Plus, Trash2, ArrowRight, Hash, Database, Search, ChevronDown, ChevronRight, X, Loader2, TableProperties } from 'lucide-react';
 import Papa from 'papaparse';
 import { toPng } from 'html-to-image';
@@ -141,10 +141,41 @@ export default function App() {
   const [mode, setMode] = useState('film'); // 'general' | 'film'
   const [activeFilmSettings, setActiveFilmSettings] = useState(null);
   const settingsTriggerRef = useRef(null);
+  const settingsPanelRef = useRef(null);
   const settingsHeadingRef = useRef(null);
 
-  useEffect(() => {
-    if (activeFilmSettings) settingsHeadingRef.current?.focus({ preventScroll: true });
+  useLayoutEffect(() => {
+    const trigger = settingsTriggerRef.current;
+    const panel = settingsPanelRef.current;
+    if (!activeFilmSettings || !trigger || !panel) return;
+
+    const viewportMargin = 8;
+    const positionPanel = () => {
+      const triggerTop = trigger.getBoundingClientRect().top;
+      const bottomLimit = document.documentElement.clientHeight - panel.offsetHeight - viewportMargin;
+      panel.style.top = `${Math.max(viewportMargin, Math.min(triggerTop, bottomLimit))}px`;
+    };
+
+    let frame;
+    const schedulePosition = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(positionPanel);
+    };
+    positionPanel();
+    settingsHeadingRef.current?.focus({ preventScroll: true });
+
+    const observer = new ResizeObserver(schedulePosition);
+    observer.observe(panel);
+    const menuArea = trigger.closest('nav')?.parentElement;
+    if (menuArea) observer.observe(menuArea);
+    window.addEventListener('resize', schedulePosition);
+    window.addEventListener('scroll', schedulePosition, { capture: true, passive: true });
+    return () => {
+      observer.disconnect();
+      cancelAnimationFrame(frame);
+      window.removeEventListener('resize', schedulePosition);
+      window.removeEventListener('scroll', schedulePosition, true);
+    };
   }, [activeFilmSettings]);
 
   const closeFilmSettings = () => {
@@ -1256,6 +1287,7 @@ export default function App() {
       {mode === 'film' && selectedFilmSettings && (
         <aside
           id="film-settings-panel"
+          ref={settingsPanelRef}
           aria-labelledby="film-settings-heading"
           onKeyDown={(event) => {
             if (event.key === 'Escape') {
@@ -1263,7 +1295,7 @@ export default function App() {
               closeFilmSettings();
             }
           }}
-          className="fixed inset-y-0 right-0 z-30 flex h-dvh w-[min(var(--film-settings-width),calc(100%_-_1rem))] flex-col border-slate-200 bg-white shadow-xl lg:right-auto lg:left-[var(--print-menu-width)] lg:border-r print:hidden"
+          className="fixed top-2 right-0 z-30 flex max-h-[calc(100dvh_-_1rem)] w-[min(var(--film-settings-width),calc(100%_-_1rem))] flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl lg:right-auto lg:left-[var(--print-menu-width)] print:hidden"
         >
           <header className="flex shrink-0 items-center gap-3 border-b border-slate-200 px-4 py-3">
             <selectedFilmSettings.icon size={19} className="shrink-0 text-blue-600" aria-hidden="true" />
@@ -1274,7 +1306,7 @@ export default function App() {
               <X size={19} aria-hidden="true" />
             </button>
           </header>
-          <div key={selectedFilmSettings.id} className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-4">
+          <div key={selectedFilmSettings.id} className="min-h-0 space-y-4 overflow-y-auto overscroll-contain p-4">
             {selectedFilmSettings.content}
           </div>
         </aside>
