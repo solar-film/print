@@ -184,11 +184,13 @@ export default function App() {
   const startPos = Math.min(savedStartPos, totalSlots);
   const filmCompanyLogo = companyLogos.find((logo) => logo.id === companyLogoId);
   const companyLogoSizePreference = `${companyLogoId}LogoSize`;
+  const filmCompanyLogoSize = filmPrintPreferences[companyLogoSizePreference];
+  const horizontalCompanyLogo = companyLogoId === 'designSquare';
   // Fit the rotated logo into its own leading column without covering the specs.
-  const filmCompanyLogoLength = filmCompanyLogo.image ? Math.max(0, Math.min(
+  const filmCompanyLogoLength = filmCompanyLogo.image && !horizontalCompanyLogo ? Math.max(0, Math.min(
     275 / gridRows - piecePaddingTop - piecePaddingBottom - 0.6,
     (200 / gridCols - piecePaddingLeft - piecePaddingRight - 0.6) * 0.2 * filmCompanyLogo.aspectRatio,
-  )) * filmPrintPreferences[companyLogoSizePreference] / 100 : 0;
+  )) * filmCompanyLogoSize / 100 : 0;
 
   // Business Card State
   const [businessCardImage, setBusinessCardImage] = useState(null);
@@ -1320,7 +1322,7 @@ export default function App() {
                           className="w-full h-full flex items-stretch gap-[2mm] box-border font-sans bg-white text-black z-10 relative"
                           style={{ paddingTop: `${piecePaddingTop}mm`, paddingBottom: `${piecePaddingBottom}mm`, paddingLeft: `${piecePaddingLeft}mm`, paddingRight: `${piecePaddingRight}mm` }}
                         >
-                          {filmCompanyLogo.image && (
+                          {filmCompanyLogo.image && !horizontalCompanyLogo && (
                             <div className="relative shrink-0" style={{ width: `${filmCompanyLogoLength / filmCompanyLogo.aspectRatio}mm` }}>
                               <img
                                 src={filmCompanyLogo.image}
@@ -1339,13 +1341,24 @@ export default function App() {
                           {/* Top Header Logos */}
                           <div className="relative z-10 flex justify-between items-start">
                             {/* Main Logo Container */}
-                            <div className="flex max-w-[75%] items-start justify-start" style={{ width: `${32 * filmBrandLogoSize / 100}mm` }}>
+                            <div className={`flex items-start justify-start ${horizontalCompanyLogo ? 'max-w-[48%]' : 'max-w-[75%]'}`} style={{ width: `${32 * filmBrandLogoSize / 100}mm` }}>
                               {filmLogo1 && (
                                 <img src={filmLogo1} className="max-w-full object-contain object-left-top" style={{ maxHeight: `${12.5 * filmBrandLogoSize / 100}mm` }} alt="Logo" />
                               )}
                             </div>
+                            {horizontalCompanyLogo && (
+                              <div className="flex w-[32%] max-w-[28mm] shrink-0 justify-center self-center">
+                                <img
+                                  src={filmCompanyLogo.image}
+                                  alt={`โลโก้บริษัท ${filmCompanyLogo.name}`}
+                                  draggable={false}
+                                  className="h-auto object-contain"
+                                  style={{ width: `${filmCompanyLogoSize}%` }}
+                                />
+                              </div>
+                            )}
                             {/* Warranty Badge Container */}
-                            <div className="flex max-w-[25%] items-start justify-end" style={{ width: `${9 * filmWarrantyLogoSize / 100}mm` }}>
+                            <div className={`flex items-start justify-end ${horizontalCompanyLogo ? 'max-w-[18%]' : 'max-w-[25%]'}`} style={{ width: `${9 * filmWarrantyLogoSize / 100}mm` }}>
                               {filmLogo2 && (
                                 <img src={filmLogo2} className="max-w-full object-contain object-right-top" style={{ maxHeight: `${8 * filmWarrantyLogoSize / 100}mm` }} alt="Warranty" />
                               )}
