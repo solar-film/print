@@ -70,7 +70,7 @@ function specRank(label) {
 
 export default function FilmSpecTable({ database, setDatabase, onBack }) {
   const { confirm, notify } = useDialog();
-  const { isUnlocked, canEdit, requestAccess, lock } = useFilmEditAccess();
+  const { canEdit } = useFilmEditAccess();
   const [search, setSearch] = useState('');
   const [editor, setEditor] = useState(null);
   const [status, setStatus] = useState('');
@@ -212,13 +212,12 @@ export default function FilmSpecTable({ database, setDatabase, onBack }) {
 
       <main className="flex min-h-0 w-full flex-1 flex-col gap-2 p-2 sm:p-3 print:block print:p-0">
         <div className="flex shrink-0 flex-col gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 sm:flex-row sm:items-center sm:justify-between print:hidden">
-          <p className={`flex items-center gap-2 text-sm font-medium ${isUnlocked ? 'text-emerald-700' : 'text-slate-600'}`}>
-            {isUnlocked ? <UnlockKeyhole size={18} className="shrink-0" /> : <LockKeyhole size={18} className="shrink-0" />}
-            {isUnlocked ? 'ปลดล็อกการแก้ไขข้อมูลแล้ว' : 'โหมดดูข้อมูล — ใส่รหัสผ่านเพื่อเพิ่ม แก้ไข หรือลบ'}
+          <p className="flex items-center gap-2 text-sm font-medium text-emerald-700">
+            <UnlockKeyhole size={18} className="shrink-0" />
+            ปลดล็อกรายการฟิล์มแล้ว
           </p>
-          <button type="button" onClick={() => { if (isUnlocked) lock(); else requestAccess(); }} className="flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-2 focus-visible:outline-blue-600">
-            {isUnlocked ? <LockKeyhole size={16} /> : <UnlockKeyhole size={16} />}
-            {isUnlocked ? 'ล็อกการแก้ไข' : 'ปลดล็อกเพื่อแก้ไข'}
+          <button type="button" onClick={onBack} className="flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-2 focus-visible:outline-blue-600">
+            <LockKeyhole size={16} /> ล็อกและกลับหน้าพิมพ์
           </button>
         </div>
         <p className="shrink-0 text-xs leading-5 text-slate-500 print:hidden">ข้อมูลที่เพิ่มหรือแก้ไขจะบันทึกไว้ในอุปกรณ์นี้ และใช้ร่วมกับหน้าเลือกฟิล์มสำหรับพิมพ์</p>
@@ -252,7 +251,7 @@ export default function FilmSpecTable({ database, setDatabase, onBack }) {
                     {tableFontSizes.map(({ size, label }) => <option key={size} value={size}>{label}</option>)}
                   </select>
                 </label>
-                <button type="button" onClick={() => requestAccess(() => openEditor())} className="flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"><Plus size={18} /> เพิ่มข้อมูลฟิล์ม</button>
+                <button type="button" onClick={() => openEditor()} className="flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"><Plus size={18} /> เพิ่มข้อมูลฟิล์ม</button>
               </div>
             </div>
           </div>
@@ -286,8 +285,8 @@ export default function FilmSpecTable({ database, setDatabase, onBack }) {
                     <tr key={`${film.brand}-${film.series}-${film.model}-${index}`} className="group odd:bg-white even:bg-slate-50/70 hover:bg-blue-50">
                       <td className={`sticky left-0 z-10 border-b border-r border-slate-200 bg-white px-2 group-hover:bg-blue-50 print:hidden ${compactTable ? 'py-0.5' : 'py-2'}`}>
                         <div className="flex items-center justify-center gap-1">
-                          <button type="button" onClick={() => requestAccess(() => openEditor(film))} aria-label={`แก้ไข ${film.brand} ${film.series} ${film.model}`} className="flex min-h-9 items-center gap-1 rounded-lg px-2 py-2 text-xs font-semibold text-blue-700 transition hover:bg-blue-100 focus-visible:outline-2 focus-visible:outline-blue-600"><Pencil size={15} /> แก้ไข</button>
-                          <button type="button" onClick={() => requestAccess(() => handleDelete(film))} aria-label={`ลบ ${film.brand} ${film.series} ${film.model}`} className="flex min-h-9 items-center gap-1 rounded-lg px-2 py-2 text-xs font-semibold text-rose-600 transition hover:bg-rose-100 focus-visible:outline-2 focus-visible:outline-rose-600"><Trash2 size={15} /> ลบ</button>
+                          <button type="button" onClick={() => openEditor(film)} aria-label={`แก้ไข ${film.brand} ${film.series} ${film.model}`} className="flex min-h-9 items-center gap-1 rounded-lg px-2 py-2 text-xs font-semibold text-blue-700 transition hover:bg-blue-100 focus-visible:outline-2 focus-visible:outline-blue-600"><Pencil size={15} /> แก้ไข</button>
+                          <button type="button" onClick={() => handleDelete(film)} aria-label={`ลบ ${film.brand} ${film.series} ${film.model}`} className="flex min-h-9 items-center gap-1 rounded-lg px-2 py-2 text-xs font-semibold text-rose-600 transition hover:bg-rose-100 focus-visible:outline-2 focus-visible:outline-rose-600"><Trash2 size={15} /> ลบ</button>
                         </div>
                       </td>
                       <td className="border-b border-r border-slate-200 px-4 text-center font-semibold text-blue-700">{displayWarranty(film)}</td>

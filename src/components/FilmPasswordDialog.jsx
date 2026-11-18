@@ -43,9 +43,9 @@ export default function FilmPasswordDialog({ onUnlock, onClose }) {
         <div className="relative p-6 sm:p-8">
           <button type="button" onClick={onClose} aria-label="ปิดหน้าปลดล็อก" className="absolute right-4 top-4 rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"><X size={20} /></button>
           <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600"><LockKeyhole size={27} /></div>
-          <h2 id="film-password-title" className="text-xl font-bold text-slate-900">ปลดล็อกการแก้ไขข้อมูล</h2>
-          <p id="film-password-description" className="mt-2 text-sm leading-6 text-slate-500">กรอกรหัสผ่านก่อนเพิ่ม แก้ไข หรือลบข้อมูลฟิล์ม</p>
-          <label htmlFor="film-edit-password" className="mt-5 block text-sm font-medium text-slate-700">รหัสผ่าน</label>
+          <h2 id="film-password-title" className="text-xl font-bold text-slate-900">ปลดล็อกรายการฟิล์ม</h2>
+          <p id="film-password-description" className="mt-2 text-sm leading-6 text-slate-500">กรอกรหัสผ่านแอดมินเพื่อดูและจัดการข้อมูลฟิล์ม</p>
+          <label htmlFor="film-edit-password" className="mt-5 block text-sm font-medium text-slate-700">รหัสผ่านแอดมิน</label>
           <div className="relative mt-2">
             <input
               ref={inputRef}
@@ -63,7 +63,7 @@ export default function FilmPasswordDialog({ onUnlock, onClose }) {
             <button type="button" onClick={() => setShowPassword((previous) => !previous)} aria-label={showPassword ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'} aria-pressed={showPassword} className="absolute inset-y-0 right-1 flex w-10 items-center justify-center rounded-lg text-slate-400 hover:text-slate-700">{showPassword ? <EyeOff size={19} /> : <Eye size={19} />}</button>
           </div>
           {error && <p id="film-password-error" role="alert" className="mt-3 text-sm text-rose-600">{error}</p>}
-          <p className="mt-4 text-xs leading-5 text-slate-500">ระบบจะล็อกอีกครั้งเมื่อออกจากหน้านี้ รีเฟรช หรือกดปุ่มล็อกการแก้ไข</p>
+          <p className="mt-4 text-xs leading-5 text-slate-500">รายการจะล็อกอีกครั้งเมื่อออกจากหน้านี้หรือรีเฟรช</p>
         </div>
         <div className="flex gap-3 border-t border-slate-100 bg-slate-50/80 px-6 py-5 sm:px-8">
           <button type="button" onClick={onClose} className="min-h-11 flex-1 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-100">ยกเลิก</button>

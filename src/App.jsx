@@ -7,6 +7,7 @@ import { filmDatabase } from './data/filmDatabase';
 import { withCatalogAdditions, catalogAdditionsVersion, catalogAdditionsStorageKey } from './data/catalogAdditions';
 import { filmFromRow, displaySpecs, specSuffix, hasFilmIdentity, filmLabel } from './data/filmSpecs';
 import DatabaseManager from './components/DatabaseManager';
+import FilmPasswordDialog from './components/FilmPasswordDialog';
 import FilmSpecTable from './components/FilmSpecTable';
 import { useDialog } from './components/dialogContext';
 import { useFilmEditAccess } from './components/filmEditAccessContext';
@@ -137,7 +138,7 @@ function SidebarDisclosure({ title, icon: Icon, value, children }) {
 
 export default function App() {
   const { notify } = useDialog();
-  const { isUnlocked: isFilmEditUnlocked, canEdit: canEditFilmDatabase } = useFilmEditAccess();
+  const { isUnlocked: isFilmEditUnlocked, canEdit: canEditFilmDatabase, unlock, lock } = useFilmEditAccess();
   const [mode, setMode] = useState('film'); // 'general' | 'film'
   const [activeFilmSettings, setActiveFilmSettings] = useState(null);
   const settingsTriggerRef = useRef(null);
@@ -289,7 +290,13 @@ export default function App() {
     return true;
   };
   const [isDbManagerOpen, setIsDbManagerOpen] = useState(false);
-  const [isFilmListPage, setIsFilmListPage] = useState(() => window.location.hash === '#film-specs');
+  const [isFilmListRequested, setIsFilmListRequested] = useState(() => window.location.hash === '#film-specs');
+  const isFilmListPage = isFilmListRequested && isFilmEditUnlocked;
+  const closeFilmList = () => {
+    lock();
+    window.history.replaceState(window.history.state, '', window.location.pathname + window.location.search);
+    setIsFilmListRequested(false);
+  };
 
   // PWA Install Prompt State
   const [deferredPrompt, setDeferredPrompt] = useState(null);
@@ -399,7 +406,7 @@ export default function App() {
   useEffect(() => {
     const handleHashChange = () => {
       const isFilmList = window.location.hash === '#film-specs';
-      setIsFilmListPage(isFilmList);
+      setIsFilmListRequested(isFilmList);
       if (isFilmList) setActiveFilmSettings(null);
     };
     window.addEventListener('hashchange', handleHashChange);
@@ -847,13 +854,19 @@ export default function App() {
       <FilmSpecTable
         database={customDatabase}
         setDatabase={updateDatabase}
-        onBack={() => { window.location.hash = ''; }}
+        onBack={closeFilmList}
       />
     );
   }
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row font-sans text-slate-800 [--print-menu-width:350px] [--film-settings-width:22rem] print:block">
+      {isFilmListRequested && (
+        <FilmPasswordDialog
+          onUnlock={() => { if (window.location.hash === '#film-specs') unlock(); }}
+          onClose={closeFilmList}
+        />
+      )}
       
       {/* Sidebar */}
       <aside className="z-10 flex w-full shrink-0 flex-col border-slate-200 bg-white md:sticky md:top-0 md:h-dvh md:w-[var(--print-menu-width)] md:border-r print:hidden">
