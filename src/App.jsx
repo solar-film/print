@@ -141,6 +141,7 @@ export default function App() {
   const { isUnlocked: isFilmEditUnlocked, canEdit: canEditFilmDatabase, unlock, lock } = useFilmEditAccess();
   const [mode, setMode] = useState('film'); // 'general' | 'film'
   const [activeFilmSettings, setActiveFilmSettings] = useState(null);
+  const isFilmPickerOpen = activeFilmSettings === 'film-picker';
   const settingsTriggerRef = useRef(null);
   const settingsPanelRef = useRef(null);
   const settingsHeadingRef = useRef(null);
@@ -150,6 +151,12 @@ export default function App() {
     const trigger = settingsTriggerRef.current;
     const panel = settingsPanelRef.current;
     if (!activeFilmSettings || !trigger || !panel) return;
+
+    if (isFilmPickerOpen) {
+      panel.style.removeProperty('top');
+      filmSearchRef.current?.focus({ preventScroll: true });
+      return;
+    }
 
     const viewportMargin = 8;
     const positionPanel = () => {
@@ -164,7 +171,7 @@ export default function App() {
       frame = requestAnimationFrame(positionPanel);
     };
     positionPanel();
-    (filmSearchRef.current ?? settingsHeadingRef.current)?.focus({ preventScroll: true });
+    settingsHeadingRef.current?.focus({ preventScroll: true });
 
     const observer = new ResizeObserver(schedulePosition);
     observer.observe(panel);
@@ -178,7 +185,7 @@ export default function App() {
       window.removeEventListener('resize', schedulePosition);
       window.removeEventListener('scroll', schedulePosition, true);
     };
-  }, [activeFilmSettings]);
+  }, [activeFilmSettings, isFilmPickerOpen]);
 
   const closeFilmSettings = () => {
     setActiveFilmSettings(null);
@@ -541,7 +548,7 @@ export default function App() {
     : { width: '210mm', height: '297mm', paddingTop: '8.5mm', paddingLeft: '5mm', paddingRight: '5mm' };
 
   const filmQuery = filmSearch.trim().toLowerCase();
-  const matchingFilms = activeFilmSettings === 'film-picker' ? customDatabase.filter((film) =>
+  const matchingFilms = isFilmPickerOpen ? customDatabase.filter((film) =>
     `${film.brand} ${film.series} ${film.model}`.toLowerCase().includes(filmQuery),
   ) : [];
 
@@ -609,7 +616,7 @@ export default function App() {
       value: filmLabel({ brand: filmBrand, model: filmModel }) || filmSeries,
       content: (
         <>
-          <div className="space-y-2">
+          <div className="shrink-0 space-y-2">
             <input
               ref={filmSearchRef}
               type="search"
@@ -623,7 +630,7 @@ export default function App() {
               เลือกรุ่นเพื่อใส่สเปคและโลโก้ให้โดยอัตโนมัติ
             </p>
           </div>
-          <div className="max-h-[min(19rem,46dvh)] overflow-y-auto overscroll-contain rounded-lg border border-slate-200 p-1">
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain rounded-lg border border-slate-200 p-1">
             {matchingFilms.map((film, index) => (
               <button
                 key={index}
@@ -1266,7 +1273,7 @@ export default function App() {
               closeFilmSettings();
             }
           }}
-          className="fixed top-2 right-0 z-30 flex max-h-[calc(100dvh_-_1rem)] w-[min(var(--film-settings-width),calc(100%_-_1rem))] flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl lg:right-auto lg:left-[var(--print-menu-width)] print:hidden"
+          className={`fixed right-0 z-30 flex w-[min(var(--film-settings-width),calc(100%_-_1rem))] flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl lg:right-auto lg:left-[var(--print-menu-width)] print:hidden ${isFilmPickerOpen ? 'inset-y-3 sm:inset-y-4' : 'top-2 max-h-[calc(100dvh_-_1rem)]'}`}
         >
           <header className="flex shrink-0 items-center gap-3 border-b border-slate-200 px-4 py-3">
             <selectedFilmSettings.icon size={19} className="shrink-0 text-blue-600" aria-hidden="true" />
@@ -1277,7 +1284,7 @@ export default function App() {
               <X size={19} aria-hidden="true" />
             </button>
           </header>
-          <div key={selectedFilmSettings.id} className="min-h-0 space-y-4 overflow-y-auto overscroll-contain p-4">
+          <div key={selectedFilmSettings.id} className={`min-h-0 p-4 ${isFilmPickerOpen ? 'flex flex-1 flex-col gap-4' : 'space-y-4 overflow-y-auto overscroll-contain'}`}>
             {selectedFilmSettings.content}
           </div>
         </aside>
