@@ -791,10 +791,10 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row font-sans text-slate-800 print:block">
+    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row font-sans text-slate-800 [--print-menu-width:350px] [--film-settings-width:22rem] print:block">
       
       {/* Sidebar */}
-      <aside className="z-10 flex w-full shrink-0 flex-col border-slate-200 bg-white md:sticky md:top-0 md:h-dvh md:w-[350px] md:border-r print:hidden">
+      <aside className="z-10 flex w-full shrink-0 flex-col border-slate-200 bg-white md:sticky md:top-0 md:h-dvh md:w-[var(--print-menu-width)] md:border-r print:hidden">
         <div className="flex shrink-0 flex-col gap-3 border-b border-slate-100 px-4 py-3.5">
           <a
             href="https://docs.google.com/spreadsheets/d/1Xc4EY34N1u75-N899BUnb4Rrkv-1qq189R1Gqp94aIg/edit?pli=1&gid=292272685#gid=292272685"
@@ -1247,7 +1247,7 @@ export default function App() {
               closeFilmSettings();
             }
           }}
-          className="fixed inset-y-0 right-0 z-30 flex h-dvh w-[min(22rem,calc(100%_-_1rem))] shrink-0 flex-col border-l border-slate-200 bg-white shadow-xl lg:sticky lg:top-0 lg:shadow-none print:hidden"
+          className="fixed inset-y-0 right-0 z-30 flex h-dvh w-[min(var(--film-settings-width),calc(100%_-_1rem))] flex-col border-slate-200 bg-white shadow-xl lg:right-auto lg:left-[var(--print-menu-width)] lg:border-r print:hidden"
         >
           <header className="flex shrink-0 items-center gap-3 border-b border-slate-200 px-4 py-3">
             <selectedFilmSettings.icon size={19} className="shrink-0 text-blue-600" aria-hidden="true" />
@@ -1265,7 +1265,7 @@ export default function App() {
       )}
 
       {/* Main Preview Area */}
-      <main ref={printPreviewRef} className={`min-w-0 flex-1 overflow-auto bg-slate-100 p-4 md:p-8 print:block print:overflow-visible print:bg-white print:p-0 ${fitPrintPreview ? 'lg:h-dvh lg:self-start print:h-auto' : ''}`}>
+      <main ref={printPreviewRef} className={`min-w-0 flex-1 overflow-auto bg-slate-100 p-4 md:p-8 print:block print:overflow-visible print:bg-white print:p-0 ${fitPrintPreview ? 'print-preview-fit lg:h-dvh lg:self-start print:h-auto' : ''}`}>
         <div className="print-preview-pages mx-auto w-max space-y-8 print:w-auto print:space-y-0">
         {pagesArray.map((pageIndex) => {
           const pageStartSlot = pageIndex * totalSlots + 1;

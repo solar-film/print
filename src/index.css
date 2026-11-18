@@ -38,6 +38,11 @@
 
 /* Fit the on-screen stack without scaling the pages exported to PDF. */
 @media screen and (min-width: 64rem) {
+  .print-preview-fit {
+    /* Keep the sheet visible beside the floating settings panel. */
+    padding-inline-start: calc(var(--film-settings-width) + 2rem);
+  }
+
   .print-preview-pages {
     zoom: var(--print-preview-scale, 1);
   }
