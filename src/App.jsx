@@ -376,9 +376,27 @@ export default function App() {
   }, []);
 
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
-  const printAreaRef = useRef(null);
+  const printPreviewRef = useRef(null);
+  const fitPrintPreview = mode === 'film' && activeFilmSettings !== null;
   const filmPrintPreviewRef = useRef(null);
   const [filmPrintOverflows, setFilmPrintOverflows] = useState(false);
+
+  useEffect(() => {
+    const preview = printPreviewRef.current;
+    if (!fitPrintPreview || !preview) return;
+
+    const pixelsPerMm = 96 / 25.4;
+    preview.scrollTo(0, 0);
+    const observer = new ResizeObserver(([{ contentRect: { width, height } }]) => {
+      const scale = Math.min(1, width / (210 * pixelsPerMm), height / (297 * pixelsPerMm));
+      preview.style.setProperty('--print-preview-scale', String(scale));
+    });
+    observer.observe(preview);
+    return () => {
+      observer.disconnect();
+      preview.style.removeProperty('--print-preview-scale');
+    };
+  }, [fitPrintPreview]);
 
   useEffect(() => {
     const preview = filmPrintPreviewRef.current;
@@ -1215,8 +1233,8 @@ export default function App() {
       </aside>
 
       {/* Main Preview Area */}
-      <main className="min-w-0 flex-1 p-4 md:p-8 overflow-auto flex flex-col items-start bg-slate-100 print:p-0 print:bg-white print:overflow-visible space-y-8 print:space-y-0 print:block">
-        
+      <main ref={printPreviewRef} className={`min-w-0 flex-1 overflow-auto bg-slate-100 p-4 md:p-8 print:block print:overflow-visible print:bg-white print:p-0 ${fitPrintPreview ? 'lg:h-dvh lg:self-start print:h-auto' : ''}`}>
+        <div className="print-preview-pages mx-auto w-max space-y-8 print:w-auto print:space-y-0">
         {pagesArray.map((pageIndex) => {
           const pageStartSlot = pageIndex * totalSlots + 1;
           const pageColumns = mode === 'business-card' ? 2 : mode === 'coupon' ? 1 : gridCols;
@@ -1233,7 +1251,7 @@ export default function App() {
             .filter((boundary) => printedRows.has(boundary - 1) || printedRows.has(boundary));
           
           return (
-            <div key={pageIndex} ref={pageIndex === 0 ? printAreaRef : null} className="print-area mx-auto bg-white shadow-2xl print:shadow-none print-area-bg relative box-border flex-shrink-0" style={printAreaStyle}>
+            <div key={pageIndex} className="print-area mx-auto bg-white shadow-2xl print:shadow-none print-area-bg relative box-border" style={printAreaStyle}>
           
           {/* Vertical Marks */}
           {verticalMarkPositions.map((col) => {
@@ -1396,7 +1414,7 @@ export default function App() {
           </div>
         </div>
         ); })}
-        
+        </div>
       </main>
 
       {mode === 'film' && selectedFilmSettings && (
@@ -1409,7 +1427,7 @@ export default function App() {
               closeFilmSettings();
             }
           }}
-          className="fixed inset-y-0 right-0 z-30 flex h-dvh w-[min(22rem,calc(100%_-_1rem))] shrink-0 flex-col border-l border-slate-200 bg-white shadow-xl xl:sticky xl:top-0 xl:shadow-none print:hidden"
+          className="fixed inset-y-0 right-0 z-30 flex h-dvh w-[min(22rem,calc(100%_-_1rem))] shrink-0 flex-col border-l border-slate-200 bg-white shadow-xl lg:sticky lg:top-0 lg:shadow-none print:hidden"
         >
           <header className="flex shrink-0 items-center gap-3 border-b border-slate-200 px-4 py-3">
             <selectedFilmSettings.icon size={19} className="shrink-0 text-blue-600" aria-hidden="true" />

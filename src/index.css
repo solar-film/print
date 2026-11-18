@@ -36,6 +36,13 @@
   }
 }
 
+/* Fit the on-screen stack without scaling the pages exported to PDF. */
+@media screen and (min-width: 64rem) {
+  .print-preview-pages {
+    zoom: var(--print-preview-scale, 1);
+  }
+}
+
 /* Print Specific Styles */
 @media print {
   @page {
