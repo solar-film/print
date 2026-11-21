@@ -550,8 +550,8 @@ export default function App() {
   const printableFilmSpecs = filmSpecs.filter(spec => (
     spec.visible !== false && spec.value && spec.value.trim() !== '' && spec.value.trim() !== '00'
   ));
-  const denseFilmSpecs = printableFilmSpecs.length >= 8;
-  const filmSpecRowGap = denseFilmSpecs ? '0.1mm' : filmSpecSize > 8 ? '0.4mm' : '0.8mm';
+  const denseFilmSpecs = printableFilmSpecs.length >= 7;
+  const filmSpecRowGap = denseFilmSpecs ? 0 : filmSpecSize > 8 ? '0.4mm' : '0.8mm';
 
   const filmQuery = filmSearch.trim().toLowerCase();
   const matchingFilms = isFilmPickerOpen ? customDatabase.filter((film) =>
@@ -1471,7 +1471,7 @@ export default function App() {
                           {/* Spec Rows */}
                           <div
                             className="relative z-10 flex w-full flex-col"
-                            style={{ fontSize: `${filmSpecSize}px`, marginTop: denseFilmSpecs ? '0.5mm' : '1mm', rowGap: filmSpecRowGap }}
+                            style={{ fontSize: `${filmSpecSize}px`, marginTop: denseFilmSpecs ? 0 : '1mm', rowGap: filmSpecRowGap }}
                           >
                             {printableFilmSpecs.map((spec, i) => (
                               <div key={i} className="flex items-baseline w-full">
