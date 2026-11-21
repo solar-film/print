@@ -1,5 +1,5 @@
 const scotchcalUsesVersion = '3m-catalog-36-models-2026-11-21-scotchcal-uses';
-export const catalogAdditionsVersion = '3m-catalog-36-models-2026-11-21-scotchcal-english';
+export const catalogAdditionsVersion = '3m-catalog-36-models-2026-11-21-op10-details';
 export const catalogAdditionsStorageKey = 'filmDatabaseCatalogAdditions';
 
 const identity = film => [film.brand, film.model]
@@ -179,6 +179,17 @@ const scotchcalStickerSpecs = new Map([
   },
 }]));
 
+// Source: 3M decorative glass film brochure and GOODFILM's Scotchcal product page.
+scotchcalStickerSpecs.set(identity({ brand: '3M', model: 'OP10-114E' }), {
+  specs: {
+    'Film Type': 'Decorative Frosted Vinyl',
+    'Suitable For': 'Glass Doors & Partitions',
+    'Adhesive': 'Clear Permanent Acrylic',
+    'Custom Cutting': 'Logos & Patterns',
+  },
+  previousDefaults: {},
+});
+
 // Source: user-provided 3M-5525-7725.jpg. The stated durations are service life.
 const scotchcal = [
   ['7725SE-314', 'Dusted Crystal', '10 years', '3–5 years'],
@@ -205,6 +216,7 @@ const catalogReleases = [
   { version: '3m-catalog-36-models-2026-11-21-scotchcal-details', films: [] },
   { version: scotchcalUsesVersion, films: [] },
   { version: '3m-catalog-36-models-2026-11-21-scotchcal-light', films: [] },
+  { version: '3m-catalog-36-models-2026-11-21-scotchcal-english', films: [] },
 ];
 
 export const catalogAdditions = catalogReleases.flatMap(release => release.films);
