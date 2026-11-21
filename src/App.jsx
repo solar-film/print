@@ -4,7 +4,7 @@ import Papa from 'papaparse';
 import { toPng } from 'html-to-image';
 import { jsPDF } from 'jspdf';
 import { filmDatabase } from './data/filmDatabase';
-import { withCatalogAdditions, catalogAdditionsVersion, catalogAdditionsStorageKey } from './data/catalogAdditions';
+import { withCatalogAdditions, updateSavedCatalog, catalogAdditionsVersion, catalogAdditionsStorageKey } from './data/catalogAdditions';
 import { filmFromRow, displaySpecs, specSuffix, hasFilmIdentity, filmLabel } from './data/filmSpecs';
 import DatabaseManager from './components/DatabaseManager';
 import FilmPasswordDialog from './components/FilmPasswordDialog';
@@ -263,9 +263,7 @@ export default function App() {
         const edited = localStorage.getItem('filmDatabaseEdited') === 'true';
         if (Array.isArray(parsed) && (version === 'v8' || edited)) {
           // Apply new catalog entries once, preserving subsequent local edits/deletions.
-          return localStorage.getItem(catalogAdditionsStorageKey) === catalogAdditionsVersion
-            ? parsed
-            : withCatalogAdditions(parsed);
+          return updateSavedCatalog(parsed, localStorage.getItem(catalogAdditionsStorageKey));
         }
       }
     } catch (error) {

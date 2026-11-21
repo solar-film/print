@@ -1,8 +1,8 @@
-// Source: user-provided 3M Ceramic-X brochure, specifications on 6 mm clear glass.
-// Thickness is not stated in the brochure and is intentionally omitted.
-export const catalogAdditionsVersion = '3m-catalog-24-models-2026-11-12';
+export const catalogAdditionsVersion = '3m-catalog-36-models-2026-11-21';
 export const catalogAdditionsStorageKey = 'filmDatabaseCatalogAdditions';
 
+// Source: user-provided 3M Ceramic-X brochure, specifications on 6 mm clear glass.
+// Thickness is not stated in the brochure and is intentionally omitted.
 const ceramicX = [
   ['5', '82.0%', '99.9%', '8.7%', '4.6%', '61.8%', '90.2%'],
   ['15', '74.0%', '99.7%', '17.3%', '4.7%', '57.7%', '80.5%'],
@@ -111,21 +111,93 @@ const prestige = [
   },
 }));
 
-export const catalogAdditions = [...ceramicX, ...ceramicCA, ...ceramicIR, ...reflective, ...prestige];
+// Source: user-provided 3M-PRex.png, specifications on 6 mm clear glass.
+// The brochure gives IRR as a series-wide maximum.
+const prestigeExterior = [
+  ['70', '0.48', '71%', '7%', '7%', '52%', 'Bluish'],
+  ['50', '0.42', '51%', '6%', '6%', '58%', 'Dark Smoke'],
+  ['40', '0.39', '42%', '5%', '6%', '61%', 'Dark Smoke'],
+  ['20', '0.34', '21%', '5%', '5%', '66%', 'Dark Smoke'],
+].map(([model, shgc, vlt, ext, int, tser, color]) => ({
+  brand: '3M', series: 'Prestige Exterior', model: `PR${model}EX`,
+  warranty: '7 ปี (ภายนอก) / 12 ปี (ภายใน)',
+  specs: {
+    'Solar Heat Gain Coefficient (SHGC)': shgc,
+    'Infrared Rejected (IRR)': 'สูงสุด 97%',
+    'UV Rejection (UVR)': '99.90%',
+    'Visible Light Transmittance (VLT)': vlt,
+    'Visible Light Reflected (EXT)': ext,
+    'Total Solar Energy Rejected (TSER)': tser,
+    'Visible Light Reflected (INT)': int,
+    'Color': color,
+  },
+}));
+
+// Source: GOODFILM 3M-NV.jpg, specifications on 6 mm clear glass.
+const nightVision = [
+  ['15', '0.28', '13%', '35%', '9%', '72%', 'Dark Smoke'],
+  ['25', '0.37', '24%', '24%', '9%', '63%', 'Dark Smoke'],
+  ['35', '0.46', '33%', '14%', '7%', '54%', 'Light Smoke'],
+].map(([model, shgc, vlt, ext, int, tser, color]) => ({
+  brand: '3M', series: 'Night Vision', model: `NV${model}`, warranty: '10',
+  specs: {
+    'Solar Heat Gain Coefficient (SHGC)': shgc,
+    'UV Rejection (UVR)': '99.9%',
+    'Visible Light Transmittance (VLT)': vlt,
+    'Visible Light Reflected (EXT)': ext,
+    'Total Solar Energy Rejected (TSER)': tser,
+    'Visible Light Reflected (INT)': int,
+    'Color': color,
+  },
+}));
+
+// Source: user-provided 3M-5525-7725.jpg. The stated durations are service life.
+const scotchcal = [
+  ['7725SE-314', 'Dusted Crystal', '10 years', '3–5 years'],
+  ['7725SE-324', 'Frosted Crystal', '10 years', '3–5 years'],
+  ['5525SE-314', 'Haze', '5 years', '2–3 years'],
+  ['5525SE-324', 'Sandblast', '5 years', '2–3 years'],
+  ['OP10-114E', 'Clear', '2 years'],
+].map(([model, finish, indoorLife, outdoorLife]) => ({
+  brand: '3M', series: 'Scotchcal', model,
+  specs: {
+    'Finish': finish,
+    'Installation': outdoorLife ? 'Indoor / Outdoor' : 'Indoor only',
+    'Indoor Service Life': indoorLife,
+    ...(outdoorLife && { 'Outdoor Service Life': outdoorLife }),
+  },
+}));
+
+const catalogReleases = [
+  { version: '3m-catalog-24-models-2026-11-12', films: [...ceramicX, ...ceramicCA, ...ceramicIR, ...reflective, ...prestige] },
+  { version: '3m-catalog-28-models-2026-11-21', films: prestigeExterior },
+  { version: '3m-catalog-31-models-2026-11-21', films: nightVision },
+  { version: catalogAdditionsVersion, films: scotchcal },
+];
+
+export const catalogAdditions = catalogReleases.flatMap(release => release.films);
 
 const identity = film => [film.brand, film.model]
   .map(value => String(value ?? '').replace(/[\s-]+/g, '').toLowerCase()).join('\u0000');
 
-export function withCatalogAdditions(database) {
+export function withCatalogAdditions(database, additions = catalogAdditions) {
   const existing = new Set(database.map(identity));
   // Older bundled records have names only; enrich those without replacing edited specs.
   const enriched = database.map(film => {
-    const addition = catalogAdditions.find(item => identity(item) === identity(film));
+    const addition = additions.find(item => identity(item) === identity(film));
     return addition && !Object.keys(film.specs || {}).length
       ? { ...addition, ...film, warranty: film.warranty || addition.warranty, specs: { ...addition.specs } }
       : film;
   });
-  return [...enriched, ...catalogAdditions
+  return [...enriched, ...additions
     .filter(film => !existing.has(identity(film)))
     .map(film => ({ ...film, specs: { ...film.specs } }))];
+}
+
+export function updateSavedCatalog(database, savedVersion) {
+  if (savedVersion === catalogAdditionsVersion) return database;
+  // Preserve edits and deletions from the releases this browser already applied.
+  const savedReleaseIndex = catalogReleases.findIndex(release => release.version === savedVersion);
+  const additions = catalogReleases.slice(savedReleaseIndex + 1).flatMap(release => release.films);
+  return withCatalogAdditions(database, additions);
 }
