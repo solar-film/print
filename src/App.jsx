@@ -6,6 +6,7 @@ import { jsPDF } from 'jspdf';
 import { filmDatabase } from './data/filmDatabase';
 import { withCatalogAdditions, updateSavedCatalog, catalogAdditionsVersion, catalogAdditionsStorageKey } from './data/catalogAdditions';
 import { filmFromRow, displaySpecs, specSuffix, hasFilmIdentity, filmLabel } from './data/filmSpecs';
+import { filmPrintLanguages, localizeFilmModel, localizeFilmSpec } from './data/filmPrintLanguage';
 import DatabaseManager from './components/DatabaseManager';
 import FilmPasswordDialog from './components/FilmPasswordDialog';
 import FilmSpecTable from './components/FilmSpecTable';
@@ -211,6 +212,7 @@ export default function App() {
     specSize: filmSpecSize,
     brandLogoSize: filmBrandLogoSize,
     warrantyLogoSize: filmWarrantyLogoSize,
+    language: filmPrintLanguage,
     watermark: companyLogoId,
     quantity,
     startPos: savedStartPos,
@@ -282,6 +284,11 @@ export default function App() {
     brandLogo: filmLogo1,
     warrantyLogo: filmLogo2,
   } = filmDraft ?? initialFilmDraft;
+  const stickerModel = localizeFilmModel(filmModel, filmPrintLanguage);
+  const localizedFilmSpecs = useMemo(
+    () => filmSpecs.map(spec => localizeFilmSpec(spec, filmPrintLanguage)),
+    [filmSpecs, filmPrintLanguage],
+  );
   const [databaseEdited] = useState(() => {
     try {
       return localStorage.getItem('filmDatabaseEdited') === 'true';
@@ -450,7 +457,7 @@ export default function App() {
     observer.observe(preview);
     for (const block of preview.children) observer.observe(block);
     return () => observer.disconnect();
-  }, [isFilmListPage, mode, startPos, quantity, filmSeries, filmModel, filmSeriesSize, filmModelSize, filmSpecSize, filmSpecs, gridCols, gridRows, piecePaddingTop, piecePaddingBottom, piecePaddingLeft, piecePaddingRight, companyLogoId, filmCompanyLogoLength, filmLogo1, filmLogo2]);
+  }, [isFilmListPage, mode, startPos, quantity, filmSeries, stickerModel, filmSeriesSize, filmModelSize, filmSpecSize, localizedFilmSpecs, gridCols, gridRows, piecePaddingTop, piecePaddingBottom, piecePaddingLeft, piecePaddingRight, companyLogoId, filmCompanyLogoLength, filmLogo1, filmLogo2]);
 
   // Handlers
   const updateFilmDraft = (field, value) => {
@@ -547,7 +554,7 @@ export default function App() {
     ? { width: '210mm', height: '297mm', paddingTop: '5mm', paddingLeft: '5mm', paddingRight: '5mm' }
     : { width: '210mm', height: '297mm', paddingTop: '8.5mm', paddingLeft: '5mm', paddingRight: '5mm' };
 
-  const printableFilmSpecs = filmSpecs.filter(spec => (
+  const printableFilmSpecs = localizedFilmSpecs.filter(spec => (
     spec.visible !== false && spec.value && spec.value.trim() !== '' && spec.value.trim() !== '00'
   ));
   const denseFilmSpecs = printableFilmSpecs.length >= 7;
@@ -870,21 +877,21 @@ export default function App() {
           <section className="rounded-xl border border-amber-200 bg-amber-50/70 p-3">
             <h2 className="flex items-center justify-between gap-2 text-sm font-bold text-amber-900">
               <span className="flex items-center">
-                <Settings size={16} className="mr-2 text-amber-600" /> ค่าสเปค (%)
+                <Settings size={16} className="mr-2 text-amber-600" /> ค่าสเปค
               </span>
             </h2>
               <p className="text-[11px] text-amber-700 leading-snug mt-3 font-medium">
                 ⚠️ ตรวจสอบและแก้ไขค่าให้ตรงรุ่นก่อนพิมพ์
               </p>
             <div className="space-y-2 mt-2">
-              {filmSpecs.map((spec, idx) => (
+              {localizedFilmSpecs.map((spec, idx) => (
                 <div key={idx} className={`flex items-center justify-between space-x-2 transition-opacity ${spec.visible === false ? 'opacity-50' : 'opacity-100'}`}>
                   <div className="flex items-center space-x-2 flex-1 min-w-0">
                     <input type="checkbox" checked={spec.visible !== false} onChange={(e) => handleSpecToggle(idx, e.target.checked)} className="w-3.5 h-3.5 shrink-0 text-amber-600 rounded border-amber-300 focus:ring-amber-500 cursor-pointer" />
                     <label className={`text-xs font-medium whitespace-normal break-words leading-snug cursor-pointer ${spec.visible === false ? 'text-slate-500 line-through' : 'text-amber-900'}`} title={spec.label} onClick={() => handleSpecToggle(idx, spec.visible === false)}>{spec.label}</label>
                   </div>
                   <div className={`flex items-center w-[110px] shrink-0 bg-white rounded shadow-sm border focus-within:ring-2 focus-within:ring-amber-500 ${spec.visible === false ? 'border-slate-200' : 'border-amber-200'}`}>
-                    <input type="text" value={spec.value} onChange={(e) => handleSpecChange(idx, e.target.value)} disabled={spec.visible === false} className="w-full px-2 py-1 text-sm text-right outline-none bg-transparent font-semibold text-slate-800 disabled:text-slate-500" />
+                    <input type="text" aria-label={spec.label} value={spec.value} onChange={(e) => handleSpecChange(idx, e.target.value)} disabled={spec.visible === false} className="w-full px-2 py-1 text-sm text-right outline-none bg-transparent font-semibold text-slate-800 disabled:text-slate-500" />
                     <span className={`text-xs font-bold pr-2 ${spec.visible === false ? 'text-slate-400' : 'text-amber-600'}`}>{specSuffix(spec)}</span>
                   </div>
                 </div>
@@ -1260,10 +1267,33 @@ export default function App() {
         {/* Action Buttons */}
         <div className="shrink-0 space-y-2 border-t border-slate-200 bg-white px-4 py-3">
           {mode === 'film' && (
-            <div className="flex items-center justify-between gap-2 text-sm">
-              <span className="font-semibold text-slate-900">3. ตรวจตัวอย่างแล้วพิมพ์</span>
-              <span className="shrink-0 text-xs font-medium tabular-nums text-slate-600">{quantity} ดวง · {totalPages} แผ่น</span>
-            </div>
+            <>
+              <div className="flex items-center justify-between gap-2 text-sm">
+                <span className="font-semibold text-slate-900">3. ตรวจตัวอย่างแล้วพิมพ์</span>
+                <span className="shrink-0 text-xs font-medium tabular-nums text-slate-600">{quantity} ดวง · {totalPages} แผ่น</span>
+              </div>
+              <fieldset className="flex items-center justify-between gap-2">
+                <legend className="sr-only">ภาษาบนสติกเกอร์</legend>
+                <span className="text-sm font-medium text-slate-700" aria-hidden="true">ภาษาบนสติกเกอร์</span>
+                <div className="flex gap-1 rounded-lg bg-slate-100 p-1">
+                  {filmPrintLanguages.map(({ value, label }) => (
+                    <label key={value} className="cursor-pointer">
+                      <input
+                        type="radio"
+                        name="film-print-language"
+                        value={value}
+                        checked={filmPrintLanguage === value}
+                        onChange={() => updateFilmPrintPreference('language', value)}
+                        className="peer sr-only"
+                      />
+                      <span lang={value} className="flex min-h-9 min-w-16 items-center justify-center rounded-md px-2 text-sm font-medium text-slate-600 peer-checked:bg-white peer-checked:text-blue-800 peer-checked:shadow-sm peer-focus-visible:ring-2 peer-focus-visible:ring-blue-500">
+                        {label}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+            </>
           )}
           <div className="grid grid-cols-2 gap-2">
             <button onClick={handlePrint} className={`w-full text-white font-semibold py-3 px-4 rounded-xl flex items-center justify-center space-x-2 transition-all shadow-md ${mode === 'film' ? 'bg-slate-800 hover:bg-slate-900 shadow-slate-300' : mode === 'coupon' ? 'bg-red-600 hover:bg-red-700 shadow-red-200' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-200'}`}>
@@ -1415,6 +1445,7 @@ export default function App() {
 
                       {mode === 'film' && (
                         <div 
+                          lang={filmPrintLanguage}
                           className="w-full h-full flex items-stretch gap-[2mm] box-border font-sans bg-white text-black z-10 relative"
                           style={{ paddingTop: `${piecePaddingTop}mm`, paddingBottom: `${piecePaddingBottom}mm`, paddingLeft: `${piecePaddingLeft}mm`, paddingRight: `${piecePaddingRight}mm` }}
                         >
@@ -1463,9 +1494,9 @@ export default function App() {
 
                           {/* Film Series Title */}
                           <div className="relative z-10 flex items-baseline w-full">
-                            <span style={{ fontSize: `${filmSeriesSize}px` }} className="font-bold leading-tight text-black whitespace-nowrap tracking-tight">{filmSeries}</span>
+                            <span style={{ fontSize: `${filmSeriesSize}px` }} className="min-w-0 wrap-break-word font-bold leading-tight text-black tracking-tight">{filmSeries}</span>
                             <div className="flex-grow border-b border-dotted border-slate-600 mx-1 mb-[2px]"></div>
-                            <span style={{ fontSize: `${filmModelSize}px` }} className="font-bold leading-tight text-black whitespace-nowrap">{filmModel}</span>
+                            <span style={{ fontSize: `${filmModelSize}px` }} className="min-w-0 wrap-break-word text-right font-bold leading-tight text-black">{stickerModel}</span>
                           </div>
 
                           {/* Spec Rows */}

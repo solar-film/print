@@ -1,5 +1,9 @@
-export const catalogAdditionsVersion = '3m-catalog-36-models-2026-11-21';
+const scotchcalUsesVersion = '3m-catalog-36-models-2026-11-21-scotchcal-uses';
+export const catalogAdditionsVersion = '3m-catalog-36-models-2026-11-21-scotchcal-english';
 export const catalogAdditionsStorageKey = 'filmDatabaseCatalogAdditions';
+
+const identity = film => [film.brand, film.model]
+  .map(value => String(value ?? '').replace(/[\s-]+/g, '').toLowerCase()).join('\u0000');
 
 // Source: user-provided 3M Ceramic-X brochure, specifications on 6 mm clear glass.
 // Thickness is not stated in the brochure and is intentionally omitted.
@@ -151,6 +155,30 @@ const nightVision = [
   },
 }));
 
+// Transmission is from 3M's 5525SE-300 bulletin and CRYSTAL Glass Finishes data sheet.
+const scotchcalStickerSpecs = new Map([
+  ['7725SE-314', 'ฝ้าแบบกระจกกัดกรด', 'Etched Glass Effect', '85%', '6 mm clear glass'],
+  ['7725SE-324', 'ฝ้าคริสตัลลายพ่นทราย', 'Crystal Sandblast Effect', '72%', '6 mm clear glass'],
+  ['5525SE-314', 'ฝ้าเรียบ', 'Smooth Frosted', '87% ± 2%', 'Film only'],
+  ['5525SE-324', 'ฝ้าลายพ่นทราย', 'Sandblast Effect', '69% ± 2%', 'Film only'],
+].map(([model, previousSurface, surface, transmission, testBasis]) => [identity({ brand: '3M', model }), {
+  specs: {
+    'Surface': surface,
+    'Privacy': 'Light passes, view blurred',
+    'Light Transmission (VLT)': transmission,
+    'Test Basis': testBasis,
+  },
+  previousDefaults: {
+    'ผิวฟิล์ม': previousSurface,
+    'การมองผ่าน': 'แสงผ่าน ช่วยบังสายตา',
+    ...(model === '5525SE-314' && {
+      'แสงส่องผ่าน (ตัวฟิล์ม)': '87% ± 2%',
+      'เหมาะกับ': 'ประตูและฉากกั้นกระจก',
+      'ตัดเป็นลาย': 'โลโก้และตัวอักษร',
+    }),
+  },
+}]));
+
 // Source: user-provided 3M-5525-7725.jpg. The stated durations are service life.
 const scotchcal = [
   ['7725SE-314', 'Dusted Crystal', '10 years', '3–5 years'],
@@ -161,6 +189,7 @@ const scotchcal = [
 ].map(([model, finish, indoorLife, outdoorLife]) => ({
   brand: '3M', series: 'Scotchcal', model,
   specs: {
+    ...scotchcalStickerSpecs.get(identity({ brand: '3M', model }))?.specs,
     'Finish': finish,
     'Installation': outdoorLife ? 'Indoor / Outdoor' : 'Indoor only',
     'Indoor Service Life': indoorLife,
@@ -172,22 +201,36 @@ const catalogReleases = [
   { version: '3m-catalog-24-models-2026-11-12', films: [...ceramicX, ...ceramicCA, ...ceramicIR, ...reflective, ...prestige] },
   { version: '3m-catalog-28-models-2026-11-21', films: prestigeExterior },
   { version: '3m-catalog-31-models-2026-11-21', films: nightVision },
-  { version: catalogAdditionsVersion, films: scotchcal },
+  { version: '3m-catalog-36-models-2026-11-21', films: scotchcal },
+  { version: '3m-catalog-36-models-2026-11-21-scotchcal-details', films: [] },
+  { version: scotchcalUsesVersion, films: [] },
+  { version: '3m-catalog-36-models-2026-11-21-scotchcal-light', films: [] },
 ];
 
 export const catalogAdditions = catalogReleases.flatMap(release => release.films);
-
-const identity = film => [film.brand, film.model]
-  .map(value => String(value ?? '').replace(/[\s-]+/g, '').toLowerCase()).join('\u0000');
 
 export function withCatalogAdditions(database, additions = catalogAdditions) {
   const existing = new Set(database.map(identity));
   // Older bundled records have names only; enrich those without replacing edited specs.
   const enriched = database.map(film => {
-    const addition = additions.find(item => identity(item) === identity(film));
-    return addition && !Object.keys(film.specs || {}).length
-      ? { ...addition, ...film, warranty: film.warranty || addition.warranty, specs: { ...addition.specs } }
-      : film;
+    const key = identity(film);
+    const addition = additions.find(item => identity(item) === key);
+    const specs = film.specs || {};
+    if (addition && !Object.keys(specs).length) {
+      return { ...addition, ...film, warranty: film.warranty || addition.warranty, specs: { ...addition.specs } };
+    }
+
+    const sticker = scotchcalStickerSpecs.get(key);
+    if (!sticker) return film;
+
+    const previousLabels = Object.keys(sticker.previousDefaults)
+      .filter(label => specs[label] === sticker.previousDefaults[label]);
+    const missingSpecs = Object.keys(sticker.specs).some(label => !Object.hasOwn(specs, label));
+    if (!previousLabels.length && !missingSpecs) return film;
+
+    const updatedSpecs = { ...sticker.specs, ...specs };
+    for (const label of previousLabels) delete updatedSpecs[label];
+    return { ...film, specs: updatedSpecs };
   });
   return [...enriched, ...additions
     .filter(film => !existing.has(identity(film)))

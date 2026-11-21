@@ -26,7 +26,8 @@ export function displaySpecs(specs = {}) {
 }
 
 export function specSuffix({ label, value }) {
-  return /shgc|thickness|construction/i.test(label) || /[a-zA-Z%]$/.test(value.trim()) ? '' : '%';
+  const hasNonPercentageUnits = /shgc|thickness|construction|strength|resistance|ความหนา|โครงสร้าง|ความต้านแรง|แรงที่ทำให้ขาด|แรงลอก|ความทนต่อการขัดถู/i.test(label);
+  return !hasNonPercentageUnits && /\d$/.test(value.trim()) ? '%' : '';
 }
 
 export function metricKey(specs, metric) {
